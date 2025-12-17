@@ -106,11 +106,8 @@ void printStatRow(const char* label, int current, int max, int totalBlocks)
 {
     char statBarBuffer[STAT_BAR_MAX_SIZE]; 
     
-    // 2. Calculate the bar using your existing logic
     calculateStatBar(current, statBarBuffer, totalBlocks);
-
-    // 3. Print the line exactly as you had it
-    // We print the label, then the bar, then the fraction
+    
     std::cout << "      » " << label << statBarBuffer << " (" << current << '/' << max << ')' << "\n";
 }
 
@@ -127,7 +124,7 @@ int main(int argc, char* argv[])
               << "│     Bars and Roaches     │ \n"
               << "│       [1] Нов файл       │ \n"
               << "│       [2] Продължи       │ \n"
-              << "╰──────────────────────────╯" << std::endl;
+              << "╰──────────────────────────╯ \n" << std::endl; // ! need both new lines here
 
     do
     {
