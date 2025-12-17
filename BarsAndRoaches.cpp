@@ -2,16 +2,15 @@
 #include <iostream>
 #include <windows.h> // needed for console encoding switch
 
-/*
 struct student
 {
     double money;
     int energy;
     int psyche;
     int knowledge;
+    int physical;
     int passed_exams;
 };
-*/
 
 const int INPUT_LINE_MAX_SIZE = 100;
 const int SEMESTER_LENGTH = 45;
@@ -48,9 +47,21 @@ bool readFile(const char* fileName)
     return true;
 }
 
-void calculateStatBar()
+void calculateStatBar(const int statValue, char* statBar)
 {
-    
+    const int TOTAL_BLOCKS = 10;
+
+    int filled = statValue / 10; 
+
+    for (int i = 0; i < filled; i++) 
+    {
+        statBar[i] = '▓';
+    }
+
+    for (int i = filled; i < (TOTAL_BLOCKS - filled); i++) 
+    {
+        statBar[i] = '░';
+    }
 }
 
 int main(int argc, char* argv[])
@@ -100,9 +111,40 @@ int main(int argc, char* argv[])
     }
     while (true);
 
-	bool isNewGame = commandLine % 2; // true or false depending on if saveFile is new
+    int difficultyLevel = 0;
     
-    // student mainCharacter;   initialization of main character
+    // difficulty choosing
+    std::cout << "╭───────────────────────────────────────────────╮ \n"
+              << "│          Избери своята специалност:           │ \n"
+              << "│       [1] Софтуерно инженерство {ЛЕСНО}       │ \n"
+              << "│       [2] Компютърни науки {СРЕДНО}           │ \n"
+              << "│       [3] Информатика {ТРУДНО}                │ \n"
+              << "╰───────────────────────────────────────────────╯" << std::endl;
+
+    do
+    {
+        std::cin >> difficultyLevel;
+        
+        if (difficultyLevel >= 1 && difficultyLevel <= 3)
+            break;
+        
+        std::cout << "Невалидна команда, опитай отново!" << '\n';
+    }
+    while (true);
+    
+    bool isNewGame = commandLine % 2; // true or false depending on if saveFile is new
+    
+    student mainCharacter;
+    
+    if (isNewGame)
+    {
+        mainCharacter.money = 1000;
+        mainCharacter.energy = difficultyLevel * 10 + 60;
+        mainCharacter.psyche = difficultyLevel * 10 + 60;
+        mainCharacter.physical = difficultyLevel * 10 + 60;
+        mainCharacter.knowledge = difficultyLevel * 10 + 60;
+        mainCharacter.passed_exams = 0;
+    } // informatika with the highest starting stats, cuz easiest to get in, so the least burnout
 
     for (int day = 1; day <= SEMESTER_LENGTH; day++)
     {
@@ -115,7 +157,7 @@ int main(int argc, char* argv[])
                   << "     » Здраве:  " << 100 << "\n"
                   << "     » Знания:  " << 100 << "\n"
                   << "     » Взети изпити:  " << 9 << "\n"
-                  << "╰───────────────────────────╯" << std::endl; // weird, but all are it's centered
+                  << "╰───────────────────────────╯" << std::endl;
         
         std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
             << "[1] Учиш \n"
