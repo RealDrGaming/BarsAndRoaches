@@ -81,7 +81,7 @@ void calculateStatBar(const int statValue, char* statBar, const int totalBlocks)
     
     for (int i = 0; i < filled; i++) 
     {
-        statBar[offset]     = fullBlock[0];
+        statBar[offset] = fullBlock[0];
         statBar[offset + 1] = fullBlock[1];
         statBar[offset + 2] = fullBlock[2];
 
@@ -90,7 +90,7 @@ void calculateStatBar(const int statValue, char* statBar, const int totalBlocks)
 
     for (int i = filled; i < totalBlocks; i++) 
     {
-        statBar[offset]     = emptyBlock[0];
+        statBar[offset] = emptyBlock[0];
         statBar[offset + 1] = emptyBlock[1];
         statBar[offset + 2] = emptyBlock[2];
         
@@ -102,6 +102,18 @@ void calculateStatBar(const int statValue, char* statBar, const int totalBlocks)
     statBar[offset] = '\0';
 }
 
+void printStatRow(const char* label, int current, int max, int totalBlocks)
+{
+    char statBarBuffer[STAT_BAR_MAX_SIZE]; 
+    
+    // 2. Calculate the bar using your existing logic
+    calculateStatBar(current, statBarBuffer, totalBlocks);
+
+    // 3. Print the line exactly as you had it
+    // We print the label, then the bar, then the fraction
+    std::cout << "      » " << label << statBarBuffer << " (" << current << '/' << max << ')' << "\n";
+}
+
 int main(int argc, char* argv[])
 {
     SetConsoleOutputCP(CP_UTF8); // switch to utf-8 encoding, so the console recognizes the ascii symbols
@@ -110,7 +122,7 @@ int main(int argc, char* argv[])
 
     int commandLine = 0;
     
-        // save-file load system
+        // ! save-file load system
     std::cout << "╭──────────────────────────╮ \n"
               << "│     Bars and Roaches     │ \n"
               << "│       [1] Нов файл       │ \n"
@@ -152,7 +164,7 @@ int main(int argc, char* argv[])
     
     int difficultyLevel = 0;
     
-    // difficulty choosing if new save file
+        // ! difficulty choosing if new save file
     if (isNewGame)
     {
         std::cout << "╭───────────────────────────────────────────────╮ \n"
@@ -184,7 +196,7 @@ int main(int argc, char* argv[])
         mainCharacter.physical = difficultyLevel * 10 + 60;
         mainCharacter.knowledge = difficultyLevel * 10 + 60;
         mainCharacter.passed_exams = 0;
-    } // informatika with the highest starting stats, cuz easiest to get in, so the least burnout
+    } // ! informatika with the highest starting stats, cuz easiest to get in, so the least burnout
     else
     {
         //set mainCharacter stats to ones read from the saveFile
@@ -203,39 +215,25 @@ int main(int argc, char* argv[])
     {
         double playerMoney = mainCharacter.money;
         
-        // get statBars of every stat and concat them to the output:
+            // ! get statBars of every stat and concat them to the output:
         int playerEnergy = mainCharacter.energy;
-        char energyStatBar[STAT_BAR_MAX_SIZE];
-        calculateStatBar(playerEnergy, energyStatBar, 10);
-        
         int playerPsyche = mainCharacter.psyche;
-        char psycheStatBar[STAT_BAR_MAX_SIZE];
-        calculateStatBar(playerPsyche, psycheStatBar, 10);
-        
         int playerPhysical = mainCharacter.physical;
-        char physicalStatBar[STAT_BAR_MAX_SIZE];
-        calculateStatBar(playerPhysical, physicalStatBar, 10);
-        
         int playerKnowledge = mainCharacter.knowledge;
-        char knowledgeStatBar[STAT_BAR_MAX_SIZE];
-        calculateStatBar(playerKnowledge, knowledgeStatBar, 10);
-        
         int playerPassedExams = mainCharacter.passed_exams;
-        char passedExamsStatBar[STAT_BAR_MAX_SIZE];
-        calculateStatBar(playerPassedExams, passedExamsStatBar, 5);
         
         std::cout << "╭───────────────────────────╮\n"
                   << "     Ден " << day << " от " <<  SEMESTER_LENGTH << "\n"
                   << " ─────────────────────────── \n"
-                  << "     » Пари: " << playerMoney << "\n"
-                  << "     » Енергия: " << energyStatBar << " (" << playerEnergy << '/' << MAX_PLAYER_ENERGY << ')' << "\n"
-                  << "     » Психика: " << psycheStatBar << " (" << playerPsyche << '/' << MAX_PLAYER_PSYCHE << ')' << "\n"
-                  << "     » Здраве:  " << physicalStatBar << " (" << playerPhysical << '/' << MAX_PLAYER_PHYSICAL << ')' << "\n"
-                  << "     » Знания:  " << knowledgeStatBar << " (" << playerKnowledge << '/' << MAX_PLAYER_KNOWLEDGE << ')' << "\n"
-                  << "     » Взети изпити:  " << passedExamsStatBar << " (" << playerPassedExams << '/' << MAX_PLAYER_PASSED_EXAMS << ')' << "\n"
-                  << "╰───────────────────────────╯" << std::endl;
+                  << "     » Пари: " << playerMoney << "\n" << std::endl;
+                printStatRow("Енергия: ", playerEnergy, MAX_PLAYER_ENERGY, 10);
+                printStatRow("Психика: ", playerPsyche, MAX_PLAYER_PSYCHE, 10);
+                printStatRow("Здраве:  ", playerPhysical, MAX_PLAYER_PHYSICAL, 10);
+                printStatRow("Знания: ", playerKnowledge, MAX_PLAYER_KNOWLEDGE, 10);
+                printStatRow("Взети изпити: ", playerPassedExams, MAX_PLAYER_PASSED_EXAMS, 5);
+        std::cout << "╰───────────────────────────╯" << std::endl;
         
-            std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
+        std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
             << "[1] Учиш \n"
             << "[2] Храниш се \n"
             << "[3] Излизаш \n"
@@ -266,7 +264,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            std::cout << "Невалидно действие, опитай отново!";
+            std::cout << "Невалидно действие, опитай отново! \n";
             day--;
         }
     }
