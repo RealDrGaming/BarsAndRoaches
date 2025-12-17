@@ -15,6 +15,14 @@ struct student
 const int INPUT_LINE_MAX_SIZE = 100;
 const int SEMESTER_LENGTH = 45;
 const char BASE_FILE_NAME[] = "SaveSlots.txt";
+const int STAT_BAR_MAX_SIZE = 64;
+
+const double MAX_PLAYER_MONEY = 99999;
+const int MAX_PLAYER_ENERGY = 100;
+const int MAX_PLAYER_PSYCHE = 100;
+const int MAX_PLAYER_KNOWLEDGE = 100;
+const int MAX_PLAYER_PHYSICAL = 100;
+const int MAX_PLAYER_PASSED_EXAMS = 5;
 
 void writeInFile(const char* fileName, const char* content)
 {
@@ -47,21 +55,51 @@ bool readFile(const char* fileName)
     return true;
 }
 
-void calculateStatBar(const int statValue, char* statBar)
+bool lineExistsIn(const char* fileName, const char* line)
 {
-    const int TOTAL_BLOCKS = 10;
+    std::ifstream inputStream (fileName);
+    
+    if (!inputStream.is_open())
+    {
+        std::cout << "Файлът не се прочете успешно!" << std::endl;
+        return false;
+    }
+    
+    // check if the line is contained in the file and return true if yes
+    
+    inputStream.close();
+    return false;
+}
 
+void calculateStatBar(const int statValue, char* statBar, const int totalBlocks)
+{
     int filled = statValue / 10; 
 
+    const char fullBlock[] = "▓";
+    const char emptyBlock[] = "░";
+    int offset = 0;
+    
     for (int i = 0; i < filled; i++) 
     {
-        statBar[i] = '▓';
+        statBar[offset]     = fullBlock[0];
+        statBar[offset + 1] = fullBlock[1];
+        statBar[offset + 2] = fullBlock[2];
+
+        offset += 3;
     }
 
-    for (int i = filled; i < (TOTAL_BLOCKS - filled); i++) 
+    for (int i = filled; i < totalBlocks; i++) 
     {
-        statBar[i] = '░';
+        statBar[offset]     = emptyBlock[0];
+        statBar[offset + 1] = emptyBlock[1];
+        statBar[offset + 2] = emptyBlock[2];
+        
+        offset += 3;
     }
+    
+    // we have to do it like this, because ▓ and ░ are 3 bytes and cannot be added by statBar[i] = '▓';
+    
+    statBar[offset] = '\0';
 }
 
 int main(int argc, char* argv[])
@@ -87,14 +125,15 @@ int main(int argc, char* argv[])
         
         if (commandLine == 1)
         {
-            std::cout << "Как искаш да кръстиш новия записан файл?" << '\n';
+            std::cout << "Как искаш да кръстиш новия записан файл? {Без празни места!}" << '\n';
             std::cin >> saveFileName;
 
-            writeInFile(BASE_FILE_NAME, saveFileName);
+            if (!lineExistsIn(BASE_FILE_NAME, saveFileName))
+                writeInFile(BASE_FILE_NAME, saveFileName);
             
             break;
         }
-        else if (commandLine == 2)
+        if (commandLine == 2)
         {
             std::cout << "От кой записан файл искаш да продължиш?" << '\n';
 
@@ -104,35 +143,36 @@ int main(int argc, char* argv[])
             // make a way to choose from printed files
             break;
         }
-        else
-        {
-            std::cout << "Невалидна команда, опитай отново!" << '\n';
-        }
-    }
-    while (true);
-
-    int difficultyLevel = 0;
-    
-    // difficulty choosing
-    std::cout << "╭───────────────────────────────────────────────╮ \n"
-              << "│          Избери своята специалност:           │ \n"
-              << "│       [1] Софтуерно инженерство {ЛЕСНО}       │ \n"
-              << "│       [2] Компютърни науки {СРЕДНО}           │ \n"
-              << "│       [3] Информатика {ТРУДНО}                │ \n"
-              << "╰───────────────────────────────────────────────╯" << std::endl;
-
-    do
-    {
-        std::cin >> difficultyLevel;
-        
-        if (difficultyLevel >= 1 && difficultyLevel <= 3)
-            break;
         
         std::cout << "Невалидна команда, опитай отново!" << '\n';
     }
     while (true);
-    
+
     bool isNewGame = commandLine % 2; // true or false depending on if saveFile is new
+    
+    int difficultyLevel = 0;
+    
+    // difficulty choosing if new save file
+    if (isNewGame)
+    {
+        std::cout << "╭───────────────────────────────────────────────╮ \n"
+                  << "│          Избери своята специалност:           │ \n"
+                  << "│       [1] Софтуерно инженерство {ЛЕСНО}       │ \n"
+                  << "│       [2] Компютърни науки {СРЕДНО}           │ \n"
+                  << "│       [3] Информатика {ТРУДНО}                │ \n"
+                  << "╰───────────────────────────────────────────────╯" << std::endl;
+
+        do
+        {
+            std::cin >> difficultyLevel;
+        
+            if (difficultyLevel >= 1 && difficultyLevel <= 3)
+                break;
+        
+            std::cout << "Невалидна команда, опитай отново!" << '\n';
+        }
+        while (true);
+    }
     
     student mainCharacter;
     
@@ -145,21 +185,57 @@ int main(int argc, char* argv[])
         mainCharacter.knowledge = difficultyLevel * 10 + 60;
         mainCharacter.passed_exams = 0;
     } // informatika with the highest starting stats, cuz easiest to get in, so the least burnout
-
-    for (int day = 1; day <= SEMESTER_LENGTH; day++)
+    else
     {
+        //set mainCharacter stats to ones read from the saveFile
+        
+        /*
+        mainCharacter.money = 1000;
+        mainCharacter.energy = difficultyLevel * 10 + 60;
+        mainCharacter.psyche = difficultyLevel * 10 + 60;
+        mainCharacter.physical = difficultyLevel * 10 + 60;
+        mainCharacter.knowledge = difficultyLevel * 10 + 60;
+        mainCharacter.passed_exams = 0;
+        */
+    }
+    
+    for (int day = 1; day <= SEMESTER_LENGTH; day++) // day should start from day rEad from file
+    {
+        double playerMoney = mainCharacter.money;
+        
+        // get statBars of every stat and concat them to the output:
+        int playerEnergy = mainCharacter.energy;
+        char energyStatBar[STAT_BAR_MAX_SIZE];
+        calculateStatBar(playerEnergy, energyStatBar, 10);
+        
+        int playerPsyche = mainCharacter.psyche;
+        char psycheStatBar[STAT_BAR_MAX_SIZE];
+        calculateStatBar(playerPsyche, psycheStatBar, 10);
+        
+        int playerPhysical = mainCharacter.physical;
+        char physicalStatBar[STAT_BAR_MAX_SIZE];
+        calculateStatBar(playerPhysical, physicalStatBar, 10);
+        
+        int playerKnowledge = mainCharacter.knowledge;
+        char knowledgeStatBar[STAT_BAR_MAX_SIZE];
+        calculateStatBar(playerKnowledge, knowledgeStatBar, 10);
+        
+        int playerPassedExams = mainCharacter.passed_exams;
+        char passedExamsStatBar[STAT_BAR_MAX_SIZE];
+        calculateStatBar(playerPassedExams, passedExamsStatBar, 5);
+        
         std::cout << "╭───────────────────────────╮\n"
                   << "     Ден " << day << " от " <<  SEMESTER_LENGTH << "\n"
                   << " ─────────────────────────── \n"
-                  << "     » Пари: " << 999999 << "\n"
-                  << "     » Енергия: " << 100 << "\n"
-                  << "     » Психика: " << 100 << "\n"
-                  << "     » Здраве:  " << 100 << "\n"
-                  << "     » Знания:  " << 100 << "\n"
-                  << "     » Взети изпити:  " << 9 << "\n"
+                  << "     » Пари: " << playerMoney << "\n"
+                  << "     » Енергия: " << energyStatBar << " (" << playerEnergy << '/' << MAX_PLAYER_ENERGY << ')' << "\n"
+                  << "     » Психика: " << psycheStatBar << " (" << playerPsyche << '/' << MAX_PLAYER_PSYCHE << ')' << "\n"
+                  << "     » Здраве:  " << physicalStatBar << " (" << playerPhysical << '/' << MAX_PLAYER_PHYSICAL << ')' << "\n"
+                  << "     » Знания:  " << knowledgeStatBar << " (" << playerKnowledge << '/' << MAX_PLAYER_KNOWLEDGE << ')' << "\n"
+                  << "     » Взети изпити:  " << passedExamsStatBar << " (" << playerPassedExams << '/' << MAX_PLAYER_PASSED_EXAMS << ')' << "\n"
                   << "╰───────────────────────────╯" << std::endl;
         
-        std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
+            std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
             << "[1] Учиш \n"
             << "[2] Храниш се \n"
             << "[3] Излизаш \n"
