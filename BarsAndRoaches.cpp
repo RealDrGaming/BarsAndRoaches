@@ -16,6 +16,7 @@ const int INPUT_LINE_MAX_SIZE = 100;
 const int SEMESTER_LENGTH = 45;
 const char BASE_FILE_NAME[] = "SaveSlots.txt";
 const int STAT_BAR_MAX_SIZE = 64;
+const int EXAM_DAYS[] = {8, 17, 26, 32, 45};
 
 const double MAX_PLAYER_MONEY = 99999;
 const int MAX_PLAYER_ENERGY = 100;
@@ -117,6 +118,8 @@ int main(int argc, char* argv[])
     
     // alternative title: Cock(tails + roaches)
 
+    // decide on random 4th date for exam
+    
     int commandLine = 0;
     
         // ! save-file load system
@@ -166,9 +169,9 @@ int main(int argc, char* argv[])
     {
         std::cout << "╭───────────────────────────────────────────────╮ \n"
                   << "│          Избери своята специалност:           │ \n"
-                  << "│       [1] Софтуерно инженерство {ЛЕСНО}       │ \n"
-                  << "│       [2] Компютърни науки {СРЕДНО}           │ \n"
-                  << "│       [3] Информатика {ТРУДНО}                │ \n"
+                  << "│       [1] Софтуерно инженерство  |  ЛЕСНО     │ \n"
+                  << "│       [2] Компютърни науки  |  СРЕДНО         │ \n"
+                  << "│       [3] Информатика  |  ТРУДНО              │ \n"
                   << "╰───────────────────────────────────────────────╯" << std::endl;
 
         do
@@ -210,14 +213,14 @@ int main(int argc, char* argv[])
     
     for (int day = 1; day <= SEMESTER_LENGTH; day++) // day should start from day rEad from file
     {
-        double playerMoney = mainCharacter.money;
+        const double playerMoney = mainCharacter.money;
         
             // ! get statBars of every stat and concat them to the output:
-        int playerEnergy = mainCharacter.energy;
-        int playerPsyche = mainCharacter.psyche;
-        int playerPhysical = mainCharacter.physical;
-        int playerKnowledge = mainCharacter.knowledge;
-        int playerPassedExams = mainCharacter.passed_exams;
+        const int playerEnergy = mainCharacter.energy;
+        const int playerPsyche = mainCharacter.psyche;
+        const int playerPhysical = mainCharacter.physical;
+        const int playerKnowledge = mainCharacter.knowledge;
+        const int playerPassedExams = mainCharacter.passed_exams;
         
         std::cout << "╭───────────────────────────╮\n"
                   << "     Ден " << day << " от " <<  SEMESTER_LENGTH << "\n"
@@ -234,35 +237,109 @@ int main(int argc, char* argv[])
             << "[1] Учиш \n"
             << "[2] Храниш се \n"
             << "[3] Излизаш \n"
-            << "[4] Почиваш \n"
+            << "[4] Почивка \n"
             << "[5] Работиш \n"
-            << "[6] Явяваш се на изпит (ако е време) \n" // only show if its exam day
+            << "[6] Явяваш се на изпит (ако е време) \n" // show this and only this if its exam day
             << "[11] Излез от играта" << std::endl;
 
         // more actions, make some dynamic way to output them
         
         std::cin >> commandLine;
 
+        int actionArg = 0;
+        
         if (commandLine == 1)
         {
-            // u study
+            std::cout << "╭────────────────────────────────────────────────────────────────╮\n"
+                      << "                              Учене\n"
+                      << " ────────────────────────────────────────────────────────────────\n"
+                      << " [1] Лекции  |  знания++ / енергия-- / психика- / здраве-\n"
+                      << " [2] Вкъщи сам  |  знания+++ / енергия- / психика--- / здраве-\n"
+                      << " [3] Навън с приятели  |  знания+ / енергия- / психика+ / здраве-\n"
+                      << "╰────────────────────────────────────────────────────────────────╯" << std::endl;
+            
+            std::cin >> actionArg;
         }
             
         else if (commandLine == 2)
         {
-            // u eat
+            std::cout << "╭────────────────────────────────────────────────────╮\n"
+                      << "                        Хранене\n"
+                      << " ────────────────────────────────────────────────────\n"
+                      << " [1] Стол  |  -4лв / енергия++ / психика-\n"
+                      << " [2] Дюнер  |  -6лв / енергия++ / психика+ / здраве--\n"
+                      << " [3] Вкъщи  |  -6лв / енергия++\n"
+                      << "╰────────────────────────────────────────────────────╯" << std::endl;
+            
+            std::cin >> actionArg;
+        }
+        
+        else if (commandLine == 3)
+        {
+            std::cout << "╭─────────────────────────────────────────────────────────╮\n"
+                      << "                          Излизане\n"
+                      << " ─────────────────────────────────────────────────────────\n"
+                      << " [1] Бар  |  -15лв / енергия- / психика++ / здраве-\n"
+                      << " [2] Концерт  |  -40лв / енергия-- / психика+++ / здраве--\n"
+                      << " [3] Разходка  |  0лв / енергия- / психика+ / здраве+\n"
+                      << "╰─────────────────────────────────────────────────────────╯" << std::endl;
+            
+            std::cin >> actionArg;
         } 
         
-        // more cases for each action
-
-        else if (commandLine == 11)
+        else if (commandLine == 4)
         {
+            std::cout << "╭──────────────────────────╮\n"
+                      << "           Почивка\n"
+                      << " ────────────────────────── \n"
+                      << " [1] Сън  |  психика+ / енергия+++\n"
+                      << " [2] Играй игри  |  психика+ / енергия- / здраве-\n"
+                      << " [3] Фитнес  |  психика++ / енергия-- / здраве++\n"
+                      << "╰──────────────────────────╯" << std::endl;
+            
+            std::cin >> actionArg;
+        } 
+        
+        else if (commandLine == 5)
+        {
+            std::cout << "╭────────────────────────────────────────────────────────────╮\n"
+                      << "                   Прибери се в родния град\n"
+                      << " ──────────────────────────────────────────────────────────── \n"
+                      << " [1] С кола  |  -30лв / енергия++ / психика++ / не губиш ден\n"
+                      << " [2] С влак  |  -10лв / енергия++ / психика++ / губиш 2 дни\n"
+                      << " [3] С автобус  |  20лв / енергия++ / психика++ / губиш 1 ден\n"
+                      << "╰────────────────────────────────────────────────────────────╯" << std::endl;
+            
+            std::cin >> actionArg;
+            
+            // make if exam day is too close you cannot go home and THIS day restarts
+        } 
+        
+        else if (commandLine == 6)
+        {
+            std::cout << "╭──────────────────────────╮\n"
+                      << "           Работа\n"
+                      << " ────────────────────────── \n"
+                      << " [1] Почасово  |  +30лв / енергия- / психика-"
+                      << " [2] Касиер  |  +50лв / енергия-- / психика--\n"
+                      << " [3] Таксиджия  |  +70лв / енергия--- / психика--\n"
+                      << "╰──────────────────────────╯" << std::endl;
+            
+            std::cin >> actionArg;
+        } 
+        
+        else if (commandLine == 6)
+        {
+            // izpit energiq--
+        } 
+        
+        // more options maybe
+        
+        if (commandLine == 11)
             break;
-        }
-        else
-        {
-            std::cout << "Невалидно действие, опитай отново! \n";
-            day--;
-        }
+        
+        std::cout << "Невалидно действие, опитай отново! \n";
+        day--;
     }
 }
+
