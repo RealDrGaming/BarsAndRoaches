@@ -109,53 +109,6 @@ int getValidInput(int min, int max) {
     }
 }
 
-void writeInFile(const char* fileName, const char* content)
-{
-    std::ofstream outputStream (fileName, std::ios_base::app);
-
-    if (!outputStream.is_open())
-    {
-        std::cout << "Файлът не се записа успешно!" << std::endl;
-        return;
-    }
-
-    outputStream << content << std::endl;
-    
-    outputStream.close();
-}
-
-bool readFile(const char* fileName)
-{
-    std::ifstream inputStream (fileName);
-
-    if (!inputStream.is_open())
-    {
-        std::cout << "Файлът не се прочете успешно!" << std::endl;
-        return false;
-    }
-
-    std::cout << inputStream.rdbuf(); // print all lines (USE ANOTHER WAY), index them so a player can choose one of them
-    
-    inputStream.close();
-    return true;
-}
-
-bool lineExistsIn(const char* fileName, const char* line)
-{
-    std::ifstream inputStream (fileName);
-    
-    if (!inputStream.is_open())
-    {
-        std::cout << "Файлът не се прочете успешно!" << std::endl;
-        return false;
-    }
-    
-    // check if the line is contained in the file and return true if yes
-    
-    inputStream.close();
-    return false;
-}
-
 void printProgressBar(int current)
 {
     int totalBlocks = 10;
@@ -313,6 +266,93 @@ bool triggerDailyEvent(student& s)
     return false;
 }
 
+void registerSaveFile(const char* newFileName) 
+{
+    std::ifstream check(BASE_FILE_NAME);
+    char tempName[INPUT_LINE_MAX_SIZE];
+    
+    if (check.is_open()) 
+    {
+        while (check >> tempName) 
+        {
+            if (stringsMatch(tempName, newFileName)) 
+            {
+                check.close();
+                return; // Name exists already, we don't double up
+            }
+        }
+        check.close();
+    }
+    
+    std::ofstream list(BASE_FILE_NAME, std::ios::app);
+    if (list.is_open()) 
+    {
+        list << newFileName << std::endl;
+        list.close();
+    }
+}
+
+void printAvailableSaves() 
+{
+    std::ifstream list(BASE_FILE_NAME);
+    if (!list.is_open()) 
+    {
+        std::cout << " (Няма намерени записи)\n";
+        return;
+    }
+
+    char tempName[INPUT_LINE_MAX_SIZE];
+    std::cout << "--- Налични игри ---\n";
+    while (list >> tempName) 
+    {
+        std::cout << " > " << tempName << "\n";
+    }
+    std::cout << "--------------------\n";
+    list.close();
+}
+
+void saveGameState(const char* fileName, int day, const student& s) 
+{
+    std::ofstream file(fileName, std::ios::app); 
+    
+    if (file.is_open()) 
+    {
+        file << day << " " 
+             << s.money << " " 
+             << s.energy << " " 
+             << s.psyche << " " 
+             << s.physical << " "
+             << s.knowledge << " " 
+             << s.passed_exams << std::endl;
+        
+        file.close();
+    }
+}
+
+bool loadGame(const char* fileName, student& s, int& dayOut) 
+{
+    std::ifstream file(fileName);
+    if (!file.is_open()) return false;
+    
+    int day, energy, psyche, physical, knowledge, exams;
+    double money;
+    bool success = false;
+
+    while (file >> day >> money >> energy >> psyche >> physical >> knowledge >> exams) {
+        dayOut = day;
+        s.money = money;
+        s.energy = energy;
+        s.psyche = psyche;
+        s.physical = physical;;
+        s.knowledge = knowledge;
+        s.passed_exams = exams;
+        success = true;
+    }
+
+    file.close();
+    return success;
+}
+
 const action STUDY_ACTIONS[] = {
     {"Лекции (Знания++ / Енергия-- / Психика- / Здраве-)", 0, -20, -10, -10, 20},
     {"Вкъщи сам (Знания+++ / Енергия- / Психика--- / Здраве-)", 0, -10, -30, -10, 30},
@@ -351,99 +391,76 @@ int main(int argc, char* argv[])
     int randomExamDate = 26 + (std::rand() % 20);    
     EXAM_DAYS[3] = randomExamDate;
     
-    int commandLine = 0;
-    
-    // ! save-file load system
-    std::cout << "╭──────────────────────────╮ \n"
-              << "│     Bars and Roaches     │ \n"
-              << "│       [1] Нов файл       │ \n"
-              << "│       [2] Продължи       │ \n"
-              << "╰──────────────────────────╯ \n" << std::endl; // ! need both new lines here
-
+    student mainCharacter;
+    int currentDay = 1;
+    char saveFileName[INPUT_LINE_MAX_SIZE];
+    bool isGameReady = false;
+        
     do
     {
-        std::cin >> commandLine;
-
-        char saveFileName[INPUT_LINE_MAX_SIZE];
+        system("cls");
         
-        if (commandLine == 1)
+        std::cout << "╭──────────────────────────╮ \n"
+                  << "│     Bars and Roaches     │ \n"
+                  << "│       [1] Нов файл       │ \n"
+                  << "│       [2] Продължи       │ \n"
+                  << "╰──────────────────────────╯ \n" << std::endl;
+    
+        int choice = getValidInput(1, 2);
+        
+        if (choice == 1)
         {
             std::cout << "Как искаш да кръстиш новия записан файл? {Без празни места!}" << '\n';
             std::cin >> saveFileName;
 
-            if (!lineExistsIn(BASE_FILE_NAME, saveFileName))
-                writeInFile(BASE_FILE_NAME, saveFileName);
+            registerSaveFile(saveFileName);
             
-            break;
-        }
-        if (commandLine == 2)
-        {
-            std::cout << "От кой записан файл искаш да продължиш?" << '\n';
-
-            if (!readFile(BASE_FILE_NAME))
-                continue;
+            std::cout << "╭───────────────────────────────────────────────╮ \n"
+                      << "│          Избери своята специалност:           │ \n"
+                      << "│       [1] Софтуерно инженерство  |  ЛЕСНО     │ \n"
+                      << "│       [2] Компютърни науки  |  СРЕДНО         │ \n"
+                      << "│       [3] Информатика  |  ТРУДНО              │ \n"
+                      << "╰───────────────────────────────────────────────╯" << std::endl;
             
-            // make a way to choose from printed files
-            break;
+            int diff = getValidInput(1, 3);
+            
+            // informatika with the highest starting stats, cuz easiest to get in, so the least burnout
+            int baseValue = diff * 10 + BASE_STAT_VALUE;
+            
+            mainCharacter = 
+            { 
+                50, baseValue, baseValue, 
+                baseValue, baseValue, 0
+            }; 
+            
+            isGameReady = true;
         }
-        
-        std::cout << "Невалидна команда, опитай отново!" << '\n';
-    }
-    while (true);
-
-    bool isNewGame = commandLine % 2; // true or false depending on if saveFile is new
-    
-    int difficultyLevel = 0;
-    
-    // ! difficulty choosing if new save file
-    if (isNewGame)
-    {
-        std::cout << "╭───────────────────────────────────────────────╮ \n"
-                  << "│          Избери своята специалност:           │ \n"
-                  << "│       [1] Софтуерно инженерство  |  ЛЕСНО     │ \n"
-                  << "│       [2] Компютърни науки  |  СРЕДНО         │ \n"
-                  << "│       [3] Информатика  |  ТРУДНО              │ \n"
-                  << "╰───────────────────────────────────────────────╯" << std::endl;
-
-        do
+        else if (choice == 2)
         {
-            std::cin >> difficultyLevel;
-        
-            if (difficultyLevel >= 1 && difficultyLevel <= 3)
-                break;
-        
-            std::cout << "Невалидна команда, опитай отново!" << '\n';
+            printAvailableSaves();
+            
+            std::cout << "Въведи името на файла точно: ";
+            std::cin >> saveFileName;
+
+            if (loadGame(saveFileName, mainCharacter, currentDay))
+            {
+                std::cout << "Успешно заредено! Продължаваме от ден " << currentDay << ".\n";
+                waitForKey();
+                isGameReady = true;
+            } 
+            else 
+            {
+                std::cout << "ГРЕШКА! Файлът не е намерен.\n";
+                std::cout << "Връщане към началното меню...\n";
+                waitForKey();
+            }
         }
-        while (true);
-    }
+    } while (!isGameReady);
     
-    student mainCharacter;
-    
-    if (isNewGame)
+    for (int day = currentDay; day <= SEMESTER_LENGTH; day++)
     {
-        mainCharacter.money = 50;
-        mainCharacter.energy = difficultyLevel * 10 + BASE_STAT_VALUE;
-        mainCharacter.psyche = difficultyLevel * 10 + BASE_STAT_VALUE;
-        mainCharacter.physical = difficultyLevel * 10 + BASE_STAT_VALUE;
-        mainCharacter.knowledge = difficultyLevel * 10 + BASE_STAT_VALUE;
-        mainCharacter.passed_exams = 0;
-    } // ! informatika with the highest starting stats, cuz easiest to get in, so the least burnout
-    else
-    {
-        //set mainCharacter stats to ones read from the saveFile
+        saveGameState(saveFileName, day, mainCharacter); // autosave game state
         
-        /*
-        mainCharacter.money = 50;
-        mainCharacter.energy = difficultyLevel * 10 + 60;
-        mainCharacter.psyche = difficultyLevel * 10 + 60;
-        mainCharacter.physical = difficultyLevel * 10 + 60;
-        mainCharacter.knowledge = difficultyLevel * 10 + 60;
-        mainCharacter.passed_exams = 0;
-        */
-    }
-    
-    for (int day = 1; day <= SEMESTER_LENGTH; day++) // day should start from day rEad from file
-    {
         system("cls");
         
         printHUD(day, mainCharacter);
@@ -528,4 +545,7 @@ int main(int argc, char* argv[])
                   << "│   Невзети изпити по време на сесията   │ \n"
                   << "╰────────────────────────────────────────╯ \n" << std::endl;
     }
+    
+    waitForKey();
+    return 0;
 }
