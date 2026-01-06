@@ -1,6 +1,8 @@
 #include <fstream>
 #include <iostream>
 #include <windows.h> // needed for console encoding switch
+#include <cstdlib> // needed for srand and rand functions
+#include <ctime> // needed for time variation
 
 struct student
 {
@@ -21,18 +23,19 @@ struct action {
     int dKnow;
 };
 
-const int INPUT_LINE_MAX_SIZE = 100;
-const int SEMESTER_LENGTH = 45;
+const int INPUT_LINE_MAX_SIZE = 100; // make dynamic
 const char BASE_FILE_NAME[] = "SaveSlots.txt";
+const int SEMESTER_LENGTH = 45;
 const int NUMBER_OF_EXAMS = 5;
-const int EXAM_DAYS[] = {8, 17, 26, 32, 45}; // fourth date has to be random
+int EXAM_DAYS[] = {8, 17, 26, 0, 45}; // fourth date has to be random
 
+const int BASE_STAT_VALUE = 60;
 const int MAX_PLAYER_ENERGY = 100;
 const int MAX_PLAYER_PSYCHE = 100;
 const int MAX_PLAYER_KNOWLEDGE = 100;
 const int MAX_PLAYER_PHYSICAL = 100;
 
-int clamp(int value, int minVal, int maxVal) {
+int my_clamp(int value, int minVal, int maxVal) {
     if (value < minVal) return minVal;
     if (value > maxVal) return maxVal;
     return value;
@@ -40,10 +43,10 @@ int clamp(int value, int minVal, int maxVal) {
 
 void applyAction(student& s, const action& act) {
     s.money += act.cost;
-    s.energy = clamp(s.energy + act.dEnergy, 0, MAX_PLAYER_ENERGY);
-    s.psyche = clamp(s.psyche + act.dPsyche, 0, MAX_PLAYER_PSYCHE);
-    s.physical = clamp(s.physical + act.dPhys, 0, MAX_PLAYER_PHYSICAL);
-    s.knowledge = clamp(s.knowledge + act.dKnow, 0, MAX_PLAYER_KNOWLEDGE);
+    s.energy = my_clamp(s.energy + act.dEnergy, 0, MAX_PLAYER_ENERGY);
+    s.psyche = my_clamp(s.psyche + act.dPsyche, 0, MAX_PLAYER_PSYCHE);
+    s.physical = my_clamp(s.physical + act.dPhys, 0, MAX_PLAYER_PHYSICAL);
+    s.knowledge = my_clamp(s.knowledge + act.dKnow, 0, MAX_PLAYER_KNOWLEDGE);
 }
 
 int getValidInput(int min, int max) {
@@ -55,7 +58,7 @@ int getValidInput(int min, int max) {
         }
         std::cin.clear();
         std::cin.ignore(10000, '\n');
-        std::cout << "Invalid command, try again!\n";
+        std::cout << "Невалидна команда, опитай отново!\n";
     }
 }
 
@@ -106,7 +109,8 @@ bool lineExistsIn(const char* fileName, const char* line)
     return false;
 }
 
-void printProgressBar(int current) {
+void printProgressBar(int current)
+{
     int totalBlocks = 10;
     int filled = (current * totalBlocks) / 100;
     
@@ -115,47 +119,70 @@ void printProgressBar(int current) {
     for (int i = filled; i < totalBlocks; i++) std::cout << "░";
 }
 
+int getNextExamDay(int currentDay, const int examDays[], int totalExams)
+{
+    for (int i = 0; i < totalExams; i++)
+    {
+        if (examDays[i] >= currentDay)
+        {
+            return examDays[i];
+        }
+    }
+    return -1; // Exam was not found
+}
+
 void printHUD(int day, const student& s)
 {
-    std::cout << "╭───────────────────────────╮\n"
+    int nextExamDay = getNextExamDay(day, EXAM_DAYS, NUMBER_OF_EXAMS);
+    
+    std::cout << "╭─────────────────────────────────────╮\n"
               << "     Ден " << day << " от " << SEMESTER_LENGTH << "\n"
-              << " ─────────────────────────── \n"
-              << "     » Пари: " << s.money << " lv.\n"
+              << "     Следващият изпит е на ден " << nextExamDay << "\n"
+              << " ───────────────────────────────────── \n"
+              << "     » Пари: " << s.money << "€\n"
               << "     » Енергия: "; printProgressBar(s.energy); std::cout << " (" << s.energy << ")\n"
               << "     » Психика: "; printProgressBar(s.psyche); std::cout << " (" << s.psyche << ")\n"
               << "     » Здраве: "; printProgressBar(s.physical); std::cout << " (" << s.physical << ")\n"
               << "     » Знание:  "; printProgressBar(s.knowledge); std::cout << " (" << s.knowledge << ")\n"
               << "     » Взети изпити:  " << s.passed_exams << "/" << NUMBER_OF_EXAMS << "\n";
-    std::cout << "╰───────────────────────────╯" << std::endl;
+    std::cout << "╰─────────────────────────────────────╯" << std::endl;
 }
 
-void runSubMenu(student& s, const char* title, const action actions[], int count) {
-    std::cout << "╭──────────────────────────────────────────────╮\n"
+void runSubMenu(student& s, const char* title, const action actions[], int count)
+{
+    std::cout << "╭───────────────────────────────────────────────────╮\n"
               << "            " << title << "\n"
-              << " ──────────────────────────────────────────────\n";
+              << " ───────────────────────────────────────────────────\n";
 
     for (int i = 0; i < count; i++) {
         std::cout << " [" << (i + 1) << "] " << actions[i].name << "\n";
     }
-    std::cout << "╰──────────────────────────────────────────────╯\n";
+    
+    std::cout << "╰───────────────────────────────────────────────────╯\n";
 
     int choice = getValidInput(1, count);
     
     applyAction(s, actions[choice - 1]);
 }
 
-void attemptExam(student& s, int examIndex) {
+void attemptExam(student& s, int examIndex) 
+{
+    int luckCoeff = std::rand() % 100;
     int penalty = examIndex * 5;
-    double successChance = (s.knowledge * 0.75) + (s.psyche * 0.1) + (s.energy * 0.1) - penalty + 10;
+    
+    double successChance = (s.knowledge * 0.75) + (s.psyche * 0.1) + (s.energy * 0.1) + (luckCoeff * 0.2) - penalty + 10;
 
-    std::cout << "\n--- EXAM RESULT ---\n";
-    if (successChance > 75) {
-        std::cout << "Exam PASSED!\n";
+    std::cout << "\n--- РЕЗУЛТАТ ОТ ИЗПИТА ---\n";
+    if (successChance > 75) 
+    {
+        std::cout << "Изпита е взет!\n";
         s.passed_exams++;
         action reward = {"Pass", 0, -20, 20, 0, 0};
         applyAction(s, reward);
-    } else {
-        std::cout << "Exam FAILED!\n";
+    } 
+    else 
+    {
+        std::cout << "Скъсан си!\n";
         action fail = {"Fail", 0, -20, -30, 0, 0};
         applyAction(s, fail);
     }
@@ -194,8 +221,10 @@ const action WORK_ACTIONS[] = {
 int main(int argc, char* argv[])
 {
     SetConsoleOutputCP(CP_UTF8); // switch to utf-8 encoding, so the console recognizes the ascii symbols
-
-    // decide on random 4th date for exam
+    std::srand(std::time(0)); // change the seed of the rand function
+    
+    int randomExamDate = 26 + (std::rand() % 20);    
+    EXAM_DAYS[3] = randomExamDate;
     
     int commandLine = 0;
     
@@ -268,10 +297,10 @@ int main(int argc, char* argv[])
     if (isNewGame)
     {
         mainCharacter.money = 50;
-        mainCharacter.energy = difficultyLevel * 10 + 60;
-        mainCharacter.psyche = difficultyLevel * 10 + 60;
-        mainCharacter.physical = difficultyLevel * 10 + 60;
-        mainCharacter.knowledge = difficultyLevel * 10 + 60;
+        mainCharacter.energy = difficultyLevel * 10 + BASE_STAT_VALUE;
+        mainCharacter.psyche = difficultyLevel * 10 + BASE_STAT_VALUE;
+        mainCharacter.physical = difficultyLevel * 10 + BASE_STAT_VALUE;
+        mainCharacter.knowledge = difficultyLevel * 10 + BASE_STAT_VALUE;
         mainCharacter.passed_exams = 0;
     } // ! informatika with the highest starting stats, cuz easiest to get in, so the least burnout
     else
@@ -303,7 +332,9 @@ int main(int argc, char* argv[])
             attemptExam(mainCharacter, todayExamIndex);
         } 
         else {
-            std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
+            if (mainCharacter.energy > 0)
+            {
+                std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
                       << "[1] Учиш \n"
                       << "[2] Храниш се \n"
                       << "[3] Излизаш \n"
@@ -311,22 +342,59 @@ int main(int argc, char* argv[])
                       << "[5] Работиш \n"
                       << "[6] Излез от играта" << std::endl;
             
-            int mainChoice = getValidInput(1, 5);
+                int mainChoice = getValidInput(1, 5);
 
-            if (mainChoice == 1) runSubMenu(mainCharacter, "Учене", STUDY_ACTIONS, 3);
-            else if (mainChoice == 2) runSubMenu(mainCharacter, "Хранене", FOOD_ACTIONS, 3);
-            else if (mainChoice == 3) runSubMenu(mainCharacter, "Излизане", FUN_ACTIONS, 3);
-            else if (mainChoice == 4) runSubMenu(mainCharacter, "Почивка", REST_ACTIONS, 3);
-            else if (mainChoice == 5) runSubMenu(mainCharacter, "Work", WORK_ACTIONS, 3);
-            else break;
+                if (mainChoice == 1) runSubMenu(mainCharacter, "Учене", STUDY_ACTIONS, 3);
+                else if (mainChoice == 2) runSubMenu(mainCharacter, "Хранене", FOOD_ACTIONS, 3);
+                else if (mainChoice == 3) runSubMenu(mainCharacter, "Излизане", FUN_ACTIONS, 3);
+                else if (mainChoice == 4) runSubMenu(mainCharacter, "Почивка", REST_ACTIONS, 3);
+                else if (mainChoice == 5) runSubMenu(mainCharacter, "Work", WORK_ACTIONS, 3);
+                else break;
+            }
+            else
+            {
+                std::cout << "\n--- Претовари се! ---\n";
+                std::cout << "Придна от умора, пропускаш деня и енергията ти се възстановява частично";
+                
+                int energyBoost = std::rand() % 40;
+                
+                action faint = {"Faint", 0, energyBoost, -10, 0, 0};
+                applyAction(mainCharacter, faint);
+            }
+        }
+        
+        
+        
+        if (mainCharacter.money <= 0)
+        {
+            std::cout << "╭────────────────────────────────────────╮ \n"
+                      << "│                Загуба!                 │ \n"
+                      << "│           Свършиха ти парите           │ \n"
+                      << "╰────────────────────────────────────────╯ \n" << std::endl;
+            break;
+        }
+        if (mainCharacter.psyche <= 0)
+        {
+            std::cout << "╭────────────────────────────────────────╮ \n"
+                      << "│                Загуба!                 │ \n"
+                      << "│        Психиката ти не издържа         │ \n"
+                      << "╰────────────────────────────────────────╯ \n" << std::endl;
+            break;
         }
     }
     
     if (mainCharacter.passed_exams == NUMBER_OF_EXAMS)
     {
         std::cout << "╭────────────────────────────────────────╮ \n"
-                  << "│               Поздравления!            │ \n"
-                  << "│       Печелиш, взе всички изпити!      │ \n"
+                  << "│              Поздравления!             │ \n"
+                  << "│       Печелиш, взе всички изпити       │ \n"
+                  << "╰────────────────────────────────────────╯ \n" << std::endl;
+    }
+    else
+    {
+        std::cout << "╭────────────────────────────────────────╮ \n"
+                  << "│                Загуба!                 │ \n"
+                  << "│   Невзети изпити по време на сесията   │ \n"
                   << "╰────────────────────────────────────────╯ \n" << std::endl;
     }
 }
