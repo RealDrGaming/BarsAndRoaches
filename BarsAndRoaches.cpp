@@ -41,12 +41,59 @@ int my_clamp(int value, int minVal, int maxVal) {
     return value;
 }
 
-void applyAction(student& s, const action& act) {
-    s.money += act.cost;
-    s.energy = my_clamp(s.energy + act.dEnergy, 0, MAX_PLAYER_ENERGY);
-    s.psyche = my_clamp(s.psyche + act.dPsyche, 0, MAX_PLAYER_PSYCHE);
-    s.physical = my_clamp(s.physical + act.dPhys, 0, MAX_PLAYER_PHYSICAL);
-    s.knowledge = my_clamp(s.knowledge + act.dKnow, 0, MAX_PLAYER_KNOWLEDGE);
+void applyAction(student& s, const action& act, bool checkEfficiency = true) {
+    
+    bool isSuccess = true; 
+
+    if (checkEfficiency)
+    {
+        int successChance = 0;
+        
+        if (s.energy > 80)
+        {
+            successChance = 100;
+        } 
+        else if (s.energy > 40)
+        {
+            successChance = 75;
+        } 
+        else 
+        {
+            successChance = 50;
+        }
+
+        int roll = std::rand() % 100;
+        
+        if (roll < successChance)
+        {
+            isSuccess = true;
+        } 
+        else
+        {
+            isSuccess = false;
+            std::cout << "Уморен си! Действието не беше напълно ефективно!\n";
+        }
+    }
+    
+    double moneyChange = act.cost;
+    if (!isSuccess && moneyChange > 0) moneyChange /= 2;
+    s.money += moneyChange;
+    
+    int energyChange = act.dEnergy;
+    if (!isSuccess && energyChange > 0) energyChange /= 2;
+    s.energy = my_clamp(s.energy + energyChange, 0, MAX_PLAYER_ENERGY);
+    
+    int psycheChange = act.dPsyche;
+    if (!isSuccess && psycheChange > 0) psycheChange /= 2;
+    s.psyche = my_clamp(s.psyche + psycheChange, 0, MAX_PLAYER_PSYCHE);
+    
+    int physChange = act.dPhys;
+    if (!isSuccess && physChange > 0) physChange /= 2;
+    s.physical = my_clamp(s.physical + physChange, 0, MAX_PLAYER_PHYSICAL);
+    
+    int knowChange = act.dKnow;
+    if (!isSuccess && knowChange > 0) knowChange /= 2;
+    s.knowledge = my_clamp(s.knowledge + knowChange, 0, MAX_PLAYER_KNOWLEDGE);
 }
 
 int getValidInput(int min, int max) {
@@ -178,13 +225,13 @@ void attemptExam(student& s, int examIndex)
         std::cout << "Изпита е взет!\n";
         s.passed_exams++;
         action reward = {"Pass", 0, -20, 20, 0, 0};
-        applyAction(s, reward);
+        applyAction(s, reward, false);
     } 
     else 
     {
         std::cout << "Скъсан си!\n";
         action fail = {"Fail", 0, -20, -30, 0, 0};
-        applyAction(s, fail);
+        applyAction(s, fail, false);
     }
 }
 
@@ -359,11 +406,9 @@ int main(int argc, char* argv[])
                 int energyBoost = std::rand() % 40;
                 
                 action faint = {"Faint", 0, energyBoost, -10, 0, 0};
-                applyAction(mainCharacter, faint);
+                applyAction(mainCharacter, faint, false);
             }
         }
-        
-        
         
         if (mainCharacter.money <= 0)
         {
