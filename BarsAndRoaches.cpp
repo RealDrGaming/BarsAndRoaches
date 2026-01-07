@@ -35,6 +35,7 @@ const int MAX_PLAYER_PSYCHE = 100;
 const int MAX_PLAYER_KNOWLEDGE = 100;
 const int MAX_PLAYER_PHYSICAL = 100;
 
+//-- helper functions
 int randomWithMax(int oneInX) 
 {
     return std::rand() % oneInX;
@@ -45,6 +46,14 @@ int my_clamp(int value, int minVal, int maxVal) {
     if (value > maxVal) return maxVal;
     return value;
 }
+
+void waitForKey()
+{
+    std::cout << "Натисни Enter за да продължиш...";
+    std::cin.ignore();
+    std::cin.get();
+}
+//--
 
 void applyAction(student& s, const action& act, bool checkEfficiency = true) {
     
@@ -140,6 +149,8 @@ void printHUD(int day, const student& s)
 {
     int nextExamDay = getNextExamDay(day, EXAM_DAYS, NUMBER_OF_EXAMS);
     
+    system("cls");
+    
     std::cout << "╭─────────────────────────────────────╮\n"
               << "     Ден " << day << " от " << SEMESTER_LENGTH << "\n"
               << "     Следващият изпит е на ден " << nextExamDay << "\n"
@@ -190,7 +201,7 @@ void triggerSideEffect(student& s, const char* category)
     }
 }
 
-void runSubMenu(student& s, const char* title, const action actions[], int count)
+bool runSubMenu(student& s, const char* title, const action actions[], int count)
 {
     std::cout << "╭───────────────────────────────────────────────────╮\n"
               << "            " << title << "\n"
@@ -200,9 +211,15 @@ void runSubMenu(student& s, const char* title, const action actions[], int count
         std::cout << " [" << (i + 1) << "] " << actions[i].name << "\n";
     }
     
+    std::cout << " [" << (count + 1) << "] Назад \n";
     std::cout << "╰───────────────────────────────────────────────────╯\n";
 
-    int choice = getValidInput(1, count);
+    int choice = getValidInput(1, count + 1);
+
+    if (choice == count + 1)
+    {
+        return false;
+    }
     
     bool riskOfFailure = true;
     if (stringsMatch(title, "Почивка"))
@@ -211,8 +228,9 @@ void runSubMenu(student& s, const char* title, const action actions[], int count
     }
     
     applyAction(s, actions[choice - 1], riskOfFailure);
-    
     triggerSideEffect(s, title);
+    
+    return true;
 }
 
 void attemptExam(student& s, int examIndex) 
@@ -236,6 +254,8 @@ void attemptExam(student& s, int examIndex)
         action fail = {"Fail", 0, -20, -30, 0, 0};
         applyAction(s, fail, false);
     }
+    
+    waitForKey();
 }
 
 const action DAILY_EVENTS[] = {
@@ -244,13 +264,6 @@ const action DAILY_EVENTS[] = {
     {"Разболял си се", 0, -20, 0, 0, 0},
     {"Няма ток в блока", 0, 0, 0, 0, 0}
 };
-
-void waitForKey()
-{
-    std::cout << "Натисни Enter за да продължиш...";
-    std::cin.ignore();
-    std::cin.get();
-}
 
 bool triggerDailyEvent(student& s)
 {
@@ -273,6 +286,7 @@ bool triggerDailyEvent(student& s)
         }
         
         applyAction(s, DAILY_EVENTS[eventIndex], false);
+        waitForKey();
     }
     return false;
 }
@@ -472,10 +486,6 @@ int main(int argc, char* argv[])
     {
         saveGameState(saveFileName, day, mainCharacter); // autosave game state
         
-        system("cls");
-        
-        printHUD(day, mainCharacter);
-        
         int todayExamIndex = -1;
         for (int i = 0; i < NUMBER_OF_EXAMS; i++)
         {
@@ -484,47 +494,56 @@ int main(int argc, char* argv[])
 
         if (todayExamIndex != -1)
         {
+            printHUD(day, mainCharacter);
             std::cout << "[1] Яви се на изпит \n";
+            
             getValidInput(1, 1);
             attemptExam(mainCharacter, todayExamIndex);
-        } 
-        else
-        {
-            if (mainCharacter.energy > 0)
-            {
-                bool skipDay = triggerDailyEvent(mainCharacter);
-                if (skipDay) 
-                {
-                    continue; 
-                }
-                
-                std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
-                      << "[1] Учиш \n"
-                      << "[2] Храниш се \n"
-                      << "[3] Излизаш \n"
-                      << "[4] Почивка \n"
-                      << "[5] Работиш \n"
-                      << "[6] Излез от играта" << std::endl;
             
-                int mainChoice = getValidInput(1, 6);
+            continue;
+        } 
 
-                if (mainChoice == 1) runSubMenu(mainCharacter, "Учене", STUDY_ACTIONS, 3);
-                else if (mainChoice == 2) runSubMenu(mainCharacter, "Хранене", FOOD_ACTIONS, 3);
-                else if (mainChoice == 3) runSubMenu(mainCharacter, "Излизане", FUN_ACTIONS, 3);
-                else if (mainChoice == 4) runSubMenu(mainCharacter, "Почивка", REST_ACTIONS, 3);
-                else if (mainChoice == 5) runSubMenu(mainCharacter, "Работа", WORK_ACTIONS, 3);
-                else break;
-            }
-            else
-            {
-                std::cout << "\n--- Претовари се! ---\n";
-                std::cout << "Придна от умора, пропускаш деня и енергията ти се възстановява частично";
-                
-                int energyBoost = randomWithMax(40);
-                
-                action faint = {"Faint", 0, energyBoost, -10, 0, 0};
-                applyAction(mainCharacter, faint, false);
-            }
+        if (mainCharacter.energy <= 0)
+        {
+            printHUD(day, mainCharacter);
+            
+            std::cout << "\n--- Претовари се! ---\n";
+            std::cout << "Придна от умора, пропускаш деня и енергията ти се възстановява частично";
+            waitForKey();
+                    
+            int energyBoost = randomWithMax(40);
+            action faint = {"Faint", 0, energyBoost, -10, 0, 0};
+            applyAction(mainCharacter, faint, false);
+                    
+            continue;
+        }
+        
+        printHUD(day, mainCharacter);
+        
+        bool skipDay = triggerDailyEvent(mainCharacter);
+        if (skipDay) continue;
+        
+        bool hasActed = false;
+        while (!hasActed)
+        {
+            printHUD(day, mainCharacter);
+            
+            std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
+              << "[1] Учиш \n"
+              << "[2] Храниш се \n"
+              << "[3] Излизаш \n"
+              << "[4] Почивка \n"
+              << "[5] Работиш \n"
+              << "[6] Излез от играта" << std::endl;
+            
+            int mainChoice = getValidInput(1, 6);
+
+            if (mainChoice == 1) hasActed = runSubMenu(mainCharacter, "Учене", STUDY_ACTIONS, 3);
+            else if (mainChoice == 2) hasActed = runSubMenu(mainCharacter, "Хранене", FOOD_ACTIONS, 3);
+            else if (mainChoice == 3) hasActed = runSubMenu(mainCharacter, "Излизане", FUN_ACTIONS, 3);
+            else if (mainChoice == 4) hasActed = runSubMenu(mainCharacter, "Почивка", REST_ACTIONS, 3);
+            else if (mainChoice == 5) hasActed = runSubMenu(mainCharacter, "Работа", WORK_ACTIONS, 3);
+            else if (mainChoice == 6) return 0;
         }
         
         if (mainCharacter.money <= 0)
