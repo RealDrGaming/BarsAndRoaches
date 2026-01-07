@@ -35,6 +35,11 @@ const int MAX_PLAYER_PSYCHE = 100;
 const int MAX_PLAYER_KNOWLEDGE = 100;
 const int MAX_PLAYER_PHYSICAL = 100;
 
+int randomWithMax(int oneInX) 
+{
+    return std::rand() % oneInX;
+}
+
 int my_clamp(int value, int minVal, int maxVal) {
     if (value < minVal) return minVal;
     if (value > maxVal) return maxVal;
@@ -62,7 +67,7 @@ void applyAction(student& s, const action& act, bool checkEfficiency = true) {
             successChance = 50;
         }
 
-        int roll = std::rand() % 100;
+        int roll = randomWithMax(100);
         
         if (roll < successChance)
         {
@@ -163,21 +168,21 @@ bool stringsMatch(const char* a, const char* b) {
 void triggerSideEffect(student& s, const char* category) 
 {
     if (stringsMatch(category, "Хранене")) { // Spoiled food event
-        if (std::rand() % 12 == 0)
+        if (randomWithMax(12) == 0)
         {
             std::cout << "\n О, не! Храната ти беше развалена... (-10 Енергия)\n";
             s.energy = my_clamp(s.energy - 10, 0, MAX_PLAYER_ENERGY);
         }
     }
     else if (stringsMatch(category, "Учене")) { // Eureka event
-        if (std::rand() % 20 == 0) 
+        if (randomWithMax(20) == 0) 
         {
             std::cout << "\n Еврика! Разбра материала перфектно! (+10 Знания)\n";
             s.knowledge = my_clamp(s.knowledge + 10, 0, MAX_PLAYER_KNOWLEDGE);
         }
     }
     else if (stringsMatch(category, "Излизане")) { // Lucky event ig
-        if (std::rand() % 30 == 0) 
+        if (randomWithMax(30) == 0) 
         {
             std::cout << "\n Намери 20€ на земята пред дискотеката! (+20 Пари)\n";
             s.money += 20;
@@ -199,14 +204,20 @@ void runSubMenu(student& s, const char* title, const action actions[], int count
 
     int choice = getValidInput(1, count);
     
-    applyAction(s, actions[choice - 1]);
+    bool riskOfFailure = true;
+    if (stringsMatch(title, "Почивка"))
+    {
+        riskOfFailure = false;
+    }
+    
+    applyAction(s, actions[choice - 1], riskOfFailure);
     
     triggerSideEffect(s, title);
 }
 
 void attemptExam(student& s, int examIndex) 
 {
-    int luckCoeff = std::rand() % 100;
+    int luckCoeff = randomWithMax(100);
     int penalty = examIndex * 5;
     
     double successChance = (s.knowledge * 0.75) + (s.psyche * 0.1) + (s.energy * 0.1) + (luckCoeff * 0.2) - penalty + 10;
@@ -243,9 +254,9 @@ void waitForKey()
 
 bool triggerDailyEvent(student& s)
 {
-    if (std::rand() % 30 == 0)
+    if (randomWithMax(30) == 0)
     {
-        int eventIndex = std::rand() % 4;
+        int eventIndex = randomWithMax(4);
         
         std::cout << "╭──────────────────────────────────────────╮\n"
                   << "│            СЛУЧАЙНО СЪБИТИЕ!             │\n"
@@ -388,7 +399,7 @@ int main(int argc, char* argv[])
     SetConsoleOutputCP(CP_UTF8); // switch to utf-8 encoding, so the console recognizes the ascii symbols
     std::srand(std::time(0)); // change the seed of the rand function
     
-    int randomExamDate = 26 + (std::rand() % 20);    
+    int randomExamDate = 26 + randomWithMax(20);    
     EXAM_DAYS[3] = randomExamDate;
     
     student mainCharacter;
@@ -466,16 +477,19 @@ int main(int argc, char* argv[])
         printHUD(day, mainCharacter);
         
         int todayExamIndex = -1;
-        for (int i = 0; i < NUMBER_OF_EXAMS; i++) {
+        for (int i = 0; i < NUMBER_OF_EXAMS; i++)
+        {
             if (EXAM_DAYS[i] == day) todayExamIndex = i;
         }
 
-        if (todayExamIndex != -1) {
+        if (todayExamIndex != -1)
+        {
             std::cout << "[1] Яви се на изпит \n";
             getValidInput(1, 1);
             attemptExam(mainCharacter, todayExamIndex);
         } 
-        else {
+        else
+        {
             if (mainCharacter.energy > 0)
             {
                 bool skipDay = triggerDailyEvent(mainCharacter);
@@ -506,7 +520,7 @@ int main(int argc, char* argv[])
                 std::cout << "\n--- Претовари се! ---\n";
                 std::cout << "Придна от умора, пропускаш деня и енергията ти се възстановява частично";
                 
-                int energyBoost = std::rand() % 40;
+                int energyBoost = randomWithMax(40);
                 
                 action faint = {"Faint", 0, energyBoost, -10, 0, 0};
                 applyAction(mainCharacter, faint, false);
