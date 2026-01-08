@@ -157,31 +157,38 @@ bool loadGame(const char* fileName, student& s, int& dayOut)
 // ---
 
 
+int calculateNewStat(int current, int delta, int divisor, int maxVal) 
+{
+    int change = (delta > 0) ? (delta / divisor) : delta;
+    return my_clamp(current + change, 0, maxVal);
+}
+
+void printStatDiff(const char* label, int oldVal, int newVal, const char* suffix = "") 
+{
+    if (oldVal != newVal) 
+    {
+        int diff = newVal - oldVal;
+        std::cout << "  " << (diff > 0 ? "+" : "") << diff << " " << label << suffix << "\n";
+    }
+}
+
 void applyAction(student& s, const action& act, bool checkEfficiency = true) {
     
-    double oldMoney = s.money;
-    int oldEnergy = s.energy;
-    int oldPsyche = s.psyche;
-    int oldHealth = s.physical;
-    int oldKnow = s.knowledge;
+    student oldStud = s;
     
     bool isSuccess = true; 
 
     if (checkEfficiency)
     {
-        int successChance = 0;
+        int chanceToSucceed = 0;
         
-        if (s.energy > 80) successChance = 100;
-        else if (s.energy > 40) successChance = 75;
-        else successChance = 50;
+        if (s.energy > 80) chanceToSucceed = 100;
+        else if (s.energy > 40) chanceToSucceed = 75;
+        else chanceToSucceed = 50;
 
         int roll = randomWithMax(100);
         
-        if (roll < successChance)
-        {
-            isSuccess = true;
-        } 
-        else
+        if (roll >= chanceToSucceed)
         {
             isSuccess = false;
             std::cout << "Уморен си! Действието не беше напълно ефективно!\n";
@@ -194,42 +201,24 @@ void applyAction(student& s, const action& act, bool checkEfficiency = true) {
     if (!isSuccess && moneyChange > 0) moneyChange /= 2;
     s.money += moneyChange;
     
-    int energyChange = (act.deltaEnergy > 0) ? (act.deltaEnergy / divisor) : act.deltaEnergy;
-    s.energy = my_clamp(s.energy + energyChange, 0, MAX_PLAYER_ENERGY);
-    
-    int psycheChange = (act.deltaPsyche > 0) ? (act.deltaPsyche / divisor) : act.deltaPsyche;
-    s.psyche = my_clamp(s.psyche + psycheChange, 0, MAX_PLAYER_PSYCHE);
-    
-    int physicalChange = (act.deltaPhysical > 0) ? (act.deltaPhysical / divisor) : act.deltaPhysical;
-    s.physical = my_clamp(s.physical + physicalChange, 0, MAX_PLAYER_PHYSICAL);
-    
-    int knowledgeChange = (act.deltaKnowledge > 0) ? (act.deltaKnowledge / divisor) : act.deltaKnowledge;
-    s.knowledge = my_clamp(s.knowledge + knowledgeChange, 0, MAX_PLAYER_KNOWLEDGE);
+    s.energy    = calculateNewStat(s.energy,    act.deltaEnergy,    divisor, MAX_PLAYER_ENERGY);
+    s.psyche    = calculateNewStat(s.psyche,    act.deltaPsyche,    divisor, MAX_PLAYER_PSYCHE);
+    s.physical  = calculateNewStat(s.physical,  act.deltaPhysical,  divisor, MAX_PLAYER_PHYSICAL);
+    s.knowledge = calculateNewStat(s.knowledge, act.deltaKnowledge, divisor, MAX_PLAYER_KNOWLEDGE);
     
     std::cout << "\n ──────────────────────────\n";
     
-    if (s.money != oldMoney) {
-        double diff = s.money - oldMoney;
+    if (s.money != oldStud.money) {
+        double diff = s.money - oldStud.money;
         std::cout << "  " << (diff > 0 ? "+" : "") << diff << "€\n";
     }
-    if (s.energy != oldEnergy) {
-        int diff = s.energy - oldEnergy;
-        std::cout << "  " << (diff > 0 ? "+" : "") << diff << " Енергия\n";
-    }
-    if (s.psyche != oldPsyche) {
-        int diff = s.psyche - oldPsyche;
-        std::cout << "  " << (diff > 0 ? "+" : "") << diff << " Психика\n";
-    }
-    if (s.physical != oldHealth) {
-        int diff = s.physical - oldHealth;
-        std::cout << "  " << (diff > 0 ? "+" : "") << diff << " Здраве\n";
-    }
-    if (s.knowledge != oldKnow) {
-        int diff = s.knowledge - oldKnow;
-        std::cout << "  " << (diff > 0 ? "+" : "") << diff << " Знание\n";
-    }
+    printStatDiff("Енергия", oldStud.energy,    s.energy);
+    printStatDiff("Психика", oldStud.psyche,    s.psyche);
+    printStatDiff("Здраве",  oldStud.physical,  s.physical);
+    printStatDiff("Знание",  oldStud.knowledge, s.knowledge);
+    
     std::cout << " ──────────────────────────\n";
-
+    
     waitForKey();
 }
 
@@ -316,13 +305,39 @@ void triggerSideEffect(student& s, const char* category)
     }
 }
 
+bool isActionAllowed(const student& s, const char* actionName) 
+{
+    const char* target = "Сън";
+    bool isSleep = true;
+    
+    for (int i = 0; target[i] != '\0'; i++) 
+    {
+        if (actionName[i] == '\0' || actionName[i] != target[i]) 
+        {
+            isSleep = false;
+            break;
+        }
+    }
+
+    if (isSleep && s.energy > 90) 
+    {
+        std::cout << "\n ⚠ Не можеш да заспиш, имаш твърде много енергия \n"
+                  << "   Направи нещо друго, за да се умориш.\n";
+        waitForKey();
+        return false;
+    }
+    
+    return true;
+}
+
 bool runSubMenu(student& s, const char* title, const action actions[], int count)
 {
     std::cout << "╭───────────────────────────────────────────────────╮\n"
               << "            " << title << "\n"
               << " ───────────────────────────────────────────────────\n";
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++)
+    {
         std::cout << " [" << (i + 1) << "] " << actions[i].name << "\n";
     }
     
@@ -334,29 +349,10 @@ bool runSubMenu(student& s, const char* title, const action actions[], int count
     if (choice == count + 1) return false;
     
     const action& selectedAction = actions[choice - 1];
-    
-    const char* target = "Сън";
-    bool isSleep = true;
-    
-    for (int i = 0; target[i] != '\0'; i++) 
-    {
-        if (selectedAction.name[i] == '\0' || selectedAction.name[i] != target[i]) 
-        {
-            isSleep = false;
-            break;
-        }
-    }
 
-    if (isSleep) 
+    if (!isActionAllowed(s, selectedAction.name))
     {
-        if (s.energy > 90) 
-        {
-            std::cout << "\n Не можеш да заспиш, имаш твърде много енергия \n"
-                      << "   Направи нещо друго, за да се умориш.\n";
-            
-            waitForKey();
-            return false;
-        }
+        return false;
     }
     
     bool riskOfFailure = true;
@@ -365,7 +361,7 @@ bool runSubMenu(student& s, const char* title, const action actions[], int count
         riskOfFailure = false;
     }
     
-    applyAction(s, actions[choice - 1], riskOfFailure);
+    applyAction(s, selectedAction, riskOfFailure);
     triggerSideEffect(s, title);
     
     return true;
