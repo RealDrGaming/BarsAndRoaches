@@ -12,6 +12,7 @@ struct student
     int knowledge;
     int physical;
     int passed_exams;
+    int difficulty;
 };
 
 struct action {
@@ -125,7 +126,8 @@ void saveGameState(const char* fileName, int day, const student& s)
              << s.psyche << " " 
              << s.physical << " "
              << s.knowledge << " " 
-             << s.passed_exams << std::endl;
+             << s.passed_exams << " "
+             << s.difficulty << std::endl;
         
         file.close();
     }
@@ -136,11 +138,11 @@ bool loadGame(const char* fileName, student& s, int& dayOut)
     std::ifstream file(fileName);
     if (!file.is_open()) return false;
     
-    int day, energy, psyche, physical, knowledge, exams;
+    int day, energy, psyche, physical, knowledge, exams, diff;
     double money;
     bool success = false;
 
-    while (file >> day >> money >> energy >> psyche >> physical >> knowledge >> exams) {
+    while (file >> day >> money >> energy >> psyche >> physical >> knowledge >> exams >> diff) {
         dayOut = day;
         s.money = money;
         s.energy = energy;
@@ -148,6 +150,7 @@ bool loadGame(const char* fileName, student& s, int& dayOut)
         s.physical = physical;
         s.knowledge = knowledge;
         s.passed_exams = exams;
+        s.difficulty = diff;
         success = true;
     }
 
@@ -370,12 +373,21 @@ bool runSubMenu(student& s, const char* title, const action actions[], int count
 void attemptExam(student& s, int examIndex) 
 {
     int luckCoeff = randomWithMax(100);
-    int penalty = examIndex * 5;
+    int penalty = examIndex * 7;
     
-    double successChance = (s.knowledge * 0.75) + (s.psyche * 0.1) + (s.energy * 0.1) + (luckCoeff * 0.2) - penalty + 10;
+    int difficultyMod = 0;
+    if (s.difficulty == 1) difficultyMod = 10;
+    else if (s.difficulty == 3) difficultyMod = -10;
+    
+    double successChance = (s.knowledge * 0.75)
+                + (s.psyche * 0.1)
+                + (s.energy * 0.1)
+                + (luckCoeff * 0.2)
+                - penalty
+                + difficultyMod;
 
     std::cout << "\n--- РЕЗУЛТАТ ОТ ИЗПИТА ---\n";
-    if (successChance > 75) 
+    if (successChance > 50) 
     {
         std::cout << "Изпита е взет!\n";
         s.passed_exams++;
@@ -527,7 +539,7 @@ int main(int argc, char* argv[])
             mainCharacter = 
             { 
                 50, baseValue, baseValue, 
-                baseValue, baseValue, 0
+                baseValue, baseValue, 0, diff
             }; 
             
             isGameReady = true;
