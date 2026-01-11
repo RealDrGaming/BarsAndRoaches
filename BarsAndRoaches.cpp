@@ -58,43 +58,45 @@ const int MAX_PLAYER_PHYSICAL = 100;
 // ---
 
 
-// --- Actions
+// --- Action constants
 const action DAILY_EVENTS[] = {
-    {"Мама и тате ти пращат пари!", 30, 0, 0, 0, 0},
+    {"Мама и тате ти пращат пари", 20, 0, 0, 0, 0},
     {"Приятел те черпи кафе", 0, 0, 10, 0, 0},
     {"Разболял си се", 0, -20, 0, 0, 0},
-    {"Няма ток в блока", 0, 0, 0, 0, 0}
+    {"Няма ток в блока", 0, 0, 0, 0, 0},
+    {"Хлъзгаш се и падаш", 0, 0, 0, -10, 0},
+    {"Има безплатен концерт на любимата ти група", 0, 0, 20, 0, 0}
 };
 
 
 const action STUDY_ACTIONS[] = {
-    {"Лекции (Знания++ / Енергия-- / Психика- / Здраве-)", 0, -20, -10, -10, 20},
-    {"Вкъщи сам (Знания+++ / Енергия- / Психика--- / Здраве-)", 0, -10, -30, -10, 30},
-    {"Навън с приятели (Знания+ / Енергия- / Психика+ / Здраве-)", 0, -10, 10, -10, 10}
+    {"Лекции (⚡-- / ☻ - / ♥- / 📖++)", 0, -20, -10, -10, 20},
+    {"Вкъщи сам (⚡- / ☻ --- / ♥- / 📖+++)", 0, -10, -30, -10, 30},
+    {"Навън с приятели (⚡- / ☻ + / ♥- / 📖+)", 0, -10, 10, -10, 10}
 };
 
 const action FOOD_ACTIONS[] = {
-    {"Стол (-8€ / Енергия++ / Психика-)", -4, 20, -10, 0, 0},
-    {"Дюнер (-12€ / Енергия++ / Психика+ / Здраве--)", -6, 20, 10, -20, 0},
-    {"Вкъщи (-12€ / Енергия++)", -6, 20, 0, 0, 0}
+    {"Стол (-8€ / ⚡++ / ☻ -)", -8, 20, -10, 0, 0},
+    {"Дюнер (-12€ / ⚡++ / ☻ + / ♥--)", -12, 20, 10, -20, 0},
+    {"Вкъщи (-12€ / ⚡++)", -12, 20, 0, 0, 0}
 };
 
 const action FUN_ACTIONS[] = {
-    {"Бар (-15€ / Енергия- / Психика++ / Здраве-)", -15, -10, 20, -10, 0},
-    {"Концерт (-50€ / Енергия-- / Психика+++ / Здраве--)", -40, -20, 30, -20, 0},
-    {"Разходка (0€ / Енергия- / Психика+ / Здраве+)", 0, -10, 10, 10, 0}
+    {"Бар (-15€ / ⚡- / ☻ ++ / ♥-)", -15, -10, 20, -10, 0},
+    {"Концерт (-50€ / ⚡-- / ☻ +++ / ♥--)", -50, -20, 30, -20, 0},
+    {"Разходка (0€ / ⚡- / ☻ + / ♥+)", 0, -10, 10, 10, 0}
 };
 
 const action REST_ACTIONS[] = {
-    {"Сън (Психика+ / Енергия+++)", 0, 30, 10, 0, 0},
-    {"Играй игри (Психика+ / Енергия- / Здраве-)", 0, -10, 10, -10, 0},
-    {"Фитнес (Психика++ / Енергия-- / Здраве++)", 0, -20, 20, 20, 0}
+    {"Сън (⚡+++ / ☻ +)", 0, 30, 10, 0, 0},
+    {"Играй игри (⚡- / ☻ + / ♥-)", 0, -10, 10, -10, 0},
+    {"Фитнес (⚡-- / ☻ ++ / ♥++)", 0, -20, 20, 20, 0}
 };
 
 const action WORK_ACTIONS[] = {
-    {"Почасово (+30€ / Енергия- / Психика-)", 30, -10, -10, 0, 0},
-    {"Касиер (+50€ / Енергия-- / Психика--)", 50, -20, -20, 0, 0},
-    {"Таксиджия (+70€ / Енергия--- / Психика---)", 70, -30, -30, 0, 0}
+    {"Почасово (+30€ / ⚡- / ☻ -)", 30, -10, -10, 0, 0},
+    {"Касиер (+50€ / ⚡-- / ☻ --)", 50, -20, -20, 0, 0},
+    {"Таксиджия (+70€ / ⚡--- / ☻ ---)", 70, -30, -30, 0, 0}
 };
 // ---
 
@@ -222,6 +224,24 @@ void registerSaveFile(const char* newFileName)
         list << newFileName << std::endl;
         list.close();
     }
+}
+
+bool saveFileExists(const char* fileName)
+{
+    std::ifstream list(BASE_FILE_NAME);
+    if (!list.is_open()) return false;
+
+    char tempName[INPUT_LINE_MAX_SIZE];
+    while (list >> tempName)
+    {
+        if (stringsMatch(tempName, fileName))
+        {
+            list.close();
+            return true; // file exists
+        }
+    }
+    list.close();
+    return false; // file does not exist
 }
 
 void printAvailableSaves()
@@ -517,6 +537,7 @@ bool triggerDailyEvent(student& s)
 // ---
 
 
+// --- Open-up sub menu for daily actions
 bool runSubMenu(student& s, const char* title, const action actions[], int count)
 {
     std::cout << "╭───────────────────────────────────────────────────╮\n"
@@ -553,10 +574,11 @@ bool runSubMenu(student& s, const char* title, const action actions[], int count
 
     return true;
 }
+// ---
 
 
 // --- Game loop functions
-void initializeGame(student& s, int& day, char* saveFileName)
+bool initializeGame(student& s, int& day, char* saveFileName)
 {
     while (true)
     {
@@ -565,9 +587,10 @@ void initializeGame(student& s, int& day, char* saveFileName)
             << "│     Bars and Roaches     │ \n"
             << "│       [1] Нов файл       │ \n"
             << "│       [2] Продължи       │ \n"
+            << "│       [3] Напусни        │ \n"
             << "╰──────────────────────────╯ \n";
 
-        int choice = getValidInput(1, 2);
+        int choice = getValidInput(1, 3);
 
         if (choice == 1) // new game
         {
@@ -578,30 +601,40 @@ void initializeGame(student& s, int& day, char* saveFileName)
     
                 std::cin.getline(saveFileName, INPUT_LINE_MAX_SIZE);
                 
-                if (containsSpace(saveFileName)) {
+                if (containsSpace(saveFileName)) 
+                {
                     std::cout << "Името не трябва да има празни места!\n";
                     continue;
                 }
                 
-                if (saveFileName[0] == '\0') {
+                if (saveFileName[0] == '\0') 
+                {
                     std::cout << "Името не може да е празно!\n";
                     continue;
                 }
 
+                if (saveFileExists(saveFileName))
+                {
+                    std::cout << "Файл с това име вече съществува!\n";
+                    continue;
+                }
+                
                 break;
             }
-            
-            registerSaveFile(saveFileName);
 
             std::cout << "╭───────────────────────────────────────────────╮ \n"
                 << "│          Избери своята специалност:           │ \n"
-                << "│       [1] Софтуерно инженерство  |  ЛЕСНО     │ \n"
-                << "│       [2] Компютърни науки  |  СРЕДНО         │ \n"
-                << "│       [3] Информатика  |  ТРУДНО              │ \n"
+                << "│      [1] Софтуерно инженерство  |  ЛЕСНО      │ \n"
+                << "│        [2] Компютърни науки  |  СРЕДНО        │ \n"
+                << "│           [3] Информатика  |  ТРУДНО          │ \n"
+                << "│                  [4] Назад                    │ \n"
                 << "╰───────────────────────────────────────────────╯" << std::endl;
 
-            int diff = getValidInput(1, 3);
+            int diff = getValidInput(1, 4);
 
+            // if player choses 4 we go back
+            if (diff == 4) continue;
+            
             // informatika with the highest starting stats, cuz easiest to get in, so the least burnout
             int baseValue = diff * 10 + BASE_STAT_VALUE;
 
@@ -611,7 +644,10 @@ void initializeGame(student& s, int& day, char* saveFileName)
                 baseValue, baseValue, 0, diff
             };
             day = 1;
-            return;
+            
+            registerSaveFile(saveFileName);
+            
+            return true;
         }
         else if (choice == 2) // continuing
         {
@@ -624,13 +660,17 @@ void initializeGame(student& s, int& day, char* saveFileName)
             {
                 std::cout << "Успешно заредено! Продължаваме от ден " << day << ".\n";
                 waitForKey();
-                return;
+                return true;
             }
 
             // if we are here, file was not found
             std::cout << "Файлът не е намерен.\n";
             std::cout << "Връщане към началното меню...\n";
             waitForKey();
+        }
+        else if (choice == 3)
+        {
+            return false;
         }
     }
 }
@@ -747,7 +787,7 @@ int main(int argc, char* argv[])
     char saveFileName[INPUT_LINE_MAX_SIZE];
 
     // initializing game, start menu, difficulty choosing, save file choosing
-    initializeGame(mainCharacter, currentDay, saveFileName);
+    if (!initializeGame(mainCharacter, currentDay, saveFileName)) return 0;
 
     // end of semester flag
     bool semesterPassed = false;
