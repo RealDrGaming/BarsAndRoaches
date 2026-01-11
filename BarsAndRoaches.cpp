@@ -1,3 +1,18 @@
+/**
+*  
+* Solution to course project # 11
+* Introduction to programming course
+* Faculty of Mathematics and Informatics of Sofia University
+* Winter semester 2025/2026
+*
+* @author Yordan Neshev
+* @idnumber 9MI0600572
+* @compiler VC
+*
+* <Game logic for 11th assignment: Student Quest>
+*
+*/
+
 #include <fstream>
 #include <iostream>
 #include <windows.h> // needed for console encoding switch
@@ -204,9 +219,9 @@ void applyAction(student& s, const action& act, bool checkEfficiency = true) {
     if (!isSuccess && moneyChange > 0) moneyChange /= 2;
     s.money += moneyChange;
     
-    s.energy    = calculateNewStat(s.energy,    act.deltaEnergy,    divisor, MAX_PLAYER_ENERGY);
-    s.psyche    = calculateNewStat(s.psyche,    act.deltaPsyche,    divisor, MAX_PLAYER_PSYCHE);
-    s.physical  = calculateNewStat(s.physical,  act.deltaPhysical,  divisor, MAX_PLAYER_PHYSICAL);
+    s.energy = calculateNewStat(s.energy,    act.deltaEnergy,    divisor, MAX_PLAYER_ENERGY);
+    s.psyche = calculateNewStat(s.psyche,    act.deltaPsyche,    divisor, MAX_PLAYER_PSYCHE);
+    s.physical = calculateNewStat(s.physical,  act.deltaPhysical,  divisor, MAX_PLAYER_PHYSICAL);
     s.knowledge = calculateNewStat(s.knowledge, act.deltaKnowledge, divisor, MAX_PLAYER_KNOWLEDGE);
     
     std::cout << "\n ──────────────────────────\n";
@@ -462,6 +477,9 @@ void applyNightlyDecay(student& s)
     }
 }
 
+
+// --- Actions
+
 const action STUDY_ACTIONS[] = {
     {"Лекции (Знания++ / Енергия-- / Психика- / Здраве-)", 0, -20, -10, -10, 20},
     {"Вкъщи сам (Знания+++ / Енергия- / Психика--- / Здраве-)", 0, -10, -30, -10, 30},
@@ -492,32 +510,25 @@ const action WORK_ACTIONS[] = {
     {"Таксиджия (+70€ / Енергия--- / Психика---)", 70, -30, -30, 0, 0}
 };
 
-int main(int argc, char* argv[])
+// ---
+
+
+// --- Game loop functions
+
+bool initializeGame(student& s, int& day, char* saveFileName)
 {
-    SetConsoleOutputCP(CP_UTF8); // switch to utf-8 encoding, so the console recognizes the ascii symbols
-    std::srand(std::time(0)); // change the seed of the rand function
-    
-    int randomExamDate = 27 + randomWithMax(18);    
-    EXAM_DAYS[3] = randomExamDate;
-    
-    student mainCharacter;
-    int currentDay = 1;
-    char saveFileName[INPUT_LINE_MAX_SIZE];
-    bool isGameReady = false;
-        
-    do
+    while (true)
     {
         system("cls");
-        
         std::cout << "╭──────────────────────────╮ \n"
                   << "│     Bars and Roaches     │ \n"
                   << "│       [1] Нов файл       │ \n"
                   << "│       [2] Продължи       │ \n"
-                  << "╰──────────────────────────╯ \n" << std::endl;
-    
-        int choice = getValidInput(1, 2);
+                  << "╰──────────────────────────╯ \n";
         
-        if (choice == 1)
+        int choice = getValidInput(1, 2);
+
+        if (choice == 1) // New game
         {
             std::cout << "Как искаш да кръстиш новия записан файл? {Без празни места!}" << '\n';
             std::cin >> saveFileName;
@@ -536,150 +547,180 @@ int main(int argc, char* argv[])
             // informatika with the highest starting stats, cuz easiest to get in, so the least burnout
             int baseValue = diff * 10 + BASE_STAT_VALUE;
             
-            mainCharacter = 
+            s =
             { 
                 50, baseValue, baseValue, 
                 baseValue, baseValue, 0, diff
             }; 
-            
-            isGameReady = true;
+            day = 1;
+            return true;
         }
-        else if (choice == 2)
+        else if (choice == 2) // Continuing
         {
             printAvailableSaves();
             
             std::cout << "Въведи името на файла точно: ";
             std::cin >> saveFileName;
 
-            if (loadGame(saveFileName, mainCharacter, currentDay))
+            if (loadGame(saveFileName, s, day))
             {
-                std::cout << "Успешно заредено! Продължаваме от ден " << currentDay << ".\n";
+                std::cout << "Успешно заредено! Продължаваме от ден " << day << ".\n";
                 waitForKey();
-                isGameReady = true;
+                return true;
             } 
-            else 
-            {
-                std::cout << "ГРЕШКА! Файлът не е намерен.\n";
-                std::cout << "Връщане към началното меню...\n";
-                waitForKey();
-            }
-        }
-    } while (!isGameReady);
-    
-    bool semesterPassed = false;
-    for (int day = currentDay; day <= SEMESTER_LENGTH; day++)
-    {
-        saveGameState(saveFileName, day, mainCharacter); // autosave game state
-        
-        int todayExamIndex = -1;
-        for (int i = 0; i < NUMBER_OF_EXAMS; i++)
-        {
-            if (EXAM_DAYS[i] == day) todayExamIndex = i;
-        }
-
-        if (todayExamIndex != -1)
-        {
-            printHUD(day, mainCharacter);
-            std::cout << "[1] Яви се на изпит \n";
             
-            getValidInput(1, 1);
-            attemptExam(mainCharacter, todayExamIndex);
-            
-            continue;
-        } 
-
-        if (mainCharacter.energy <= 0)
-        {
-            printHUD(day, mainCharacter);
-            
-            std::cout << "\n--- Претовари се! ---\n";
-            std::cout << "Припадна от умора, пропускаш деня и енергията ти се възстановява частично";
+            // if we are here, file was not found
+            std::cout << "ГРЕШКА! Файлът не е намерен.\n";
+            std::cout << "Връщане към началното меню...\n";
             waitForKey();
-                    
-            int energyBoost = randomWithMax(40);
-            action faint = {"Faint", 0, energyBoost, -10, 0, 0};
-            applyAction(mainCharacter, faint, false);
-                    
-            continue;
-        }
-        
-        printHUD(day, mainCharacter);
-        
-        bool skipDay = triggerDailyEvent(mainCharacter);
-        if (skipDay) continue;
-        
-        bool hasActed = false;
-        while (!hasActed)
-        {
-            printHUD(day, mainCharacter);
-            
-            std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
-              << "[1] Учиш \n"
-              << "[2] Храниш се \n"
-              << "[3] Излизаш \n"
-              << "[4] Почивка \n"
-              << "[5] Работиш \n"
-              << "[6] Излез от играта" << std::endl;
-            
-            int mainChoice = getValidInput(1, 6);
-
-            if (mainChoice == 1) hasActed = runSubMenu(mainCharacter, "Учене", STUDY_ACTIONS, 3);
-            else if (mainChoice == 2) hasActed = runSubMenu(mainCharacter, "Хранене", FOOD_ACTIONS, 3);
-            else if (mainChoice == 3) hasActed = runSubMenu(mainCharacter, "Излизане", FUN_ACTIONS, 3);
-            else if (mainChoice == 4) hasActed = runSubMenu(mainCharacter, "Почивка", REST_ACTIONS, 3);
-            else if (mainChoice == 5) hasActed = runSubMenu(mainCharacter, "Работа", WORK_ACTIONS, 3);
-            else if (mainChoice == 6) return 0;
-        }
-        
-        if (mainCharacter.money <= 0)
-        {
-            std::cout << "╭────────────────────────────────────────╮ \n"
-                      << "│                Загуба!                 │ \n"
-                      << "│           Свършиха ти парите           │ \n"
-                      << "╰────────────────────────────────────────╯ \n" << std::endl;
-            waitForKey();
-            break;
-        }
-        if (mainCharacter.psyche <= 0)
-        {
-            std::cout << "╭────────────────────────────────────────╮ \n"
-                      << "│                Загуба!                 │ \n"
-                      << "│        Психиката ти не издържа         │ \n"
-                      << "╰────────────────────────────────────────╯ \n" << std::endl;
-            waitForKey();
-            break;
-        }
-        
-        // character survived, we apply decay to knowledge to prevent sleep spamming
-        applyNightlyDecay(mainCharacter);
-
-        if (day == SEMESTER_LENGTH)
-        {
-            semesterPassed = true;
         }
     }
+}
 
-    if (semesterPassed)
-    {
-        if (mainCharacter.passed_exams == NUMBER_OF_EXAMS)
-        {
-            std::cout << "╭────────────────────────────────────────╮ \n"
-                      << "│              Поздравления!             │ \n"
-                      << "│       Печелиш, взе всички изпити       │ \n"
-                      << "╰────────────────────────────────────────╯ \n" << std::endl;
-        }
-        else
-        {
-            std::cout << "╭────────────────────────────────────────╮ \n"
-                      << "│                Загуба!                 │ \n"
-                      << "│   Невзети изпити по време на сесията   │ \n"
-                      << "╰────────────────────────────────────────╯ \n" << std::endl;
-        }
+bool checkAndHandleFaint(student& s, int day)
+{
+    if (s.energy > 0) return false;
     
+    printHUD(day, s);
+                
+    std::cout << "\n--- Претовари се! ---\n";
+    std::cout << "Припадна от умора, пропускаш деня и енергията ти се възстановява частично";
+    waitForKey();
+                        
+    int recoveredEnergy = 40 - s.difficulty + randomWithMax(20);
+    action faint = {"Faint", 0, recoveredEnergy, -10, 0, 0};
+    applyAction(s, faint, false);
+                        
+    return true; // True means character fainted so we skip the day
+}
+
+bool handleDailyActions(student& s, int day)
+{
+    bool hasActed = false;
+    while (!hasActed)
+    {
+        printHUD(day, s);
+                
+        std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
+          << "[1] Учиш \n"
+          << "[2] Храниш се \n"
+          << "[3] Излизаш \n"
+          << "[4] Почивка \n"
+          << "[5] Работиш \n"
+          << "[6] Излез от играта" << std::endl;
+                
+        int mainChoice = getValidInput(1, 6);
+
+        if (mainChoice == 1) hasActed = runSubMenu(s, "Учене", STUDY_ACTIONS, 3);
+        else if (mainChoice == 2) hasActed = runSubMenu(s, "Хранене", FOOD_ACTIONS, 3);
+        else if (mainChoice == 3) hasActed = runSubMenu(s, "Излизане", FUN_ACTIONS, 3);
+        else if (mainChoice == 4) hasActed = runSubMenu(s, "Почивка", REST_ACTIONS, 3);
+        else if (mainChoice == 5) hasActed = runSubMenu(s, "Работа", WORK_ACTIONS, 3);
+        else if (mainChoice == 6) return false;
+    }
+    
+    return true;
+}
+
+bool checkGameOver(const student& s)
+{
+    if (s.money <= 0)
+    {
+        std::cout << "╭────────────────────────────────────────╮ \n"
+                  << "│                Загуба!                 │ \n"
+                  << "│           Свършиха ти парите           │ \n"
+                  << "╰────────────────────────────────────────╯ \n" << std::endl;
         waitForKey();
-        
-        // we should delete character save file from the master file and the file itself when the game ends
+        return true;
     }
+    if (s.psyche <= 0)
+    {
+        std::cout << "╭────────────────────────────────────────╮ \n"
+                  << "│                Загуба!                 │ \n"
+                  << "│        Психиката ти не издържа         │ \n"
+                  << "╰────────────────────────────────────────╯ \n" << std::endl;
+        waitForKey();
+        return true;
+    }
+    return false;
+}
+
+// ---
+
+
+int main(int argc, char* argv[])
+{
+    SetConsoleOutputCP(CP_UTF8); // switch to utf-8 encoding, so the console recognizes the ascii symbols
+    std::srand(std::time(0)); // change the seed of the rand function
     
-    return 0;
+    EXAM_DAYS[3] = 27 + randomWithMax(18); 
+    
+    student mainCharacter;
+    int currentDay = 1;
+    char saveFileName[INPUT_LINE_MAX_SIZE];
+
+    if (initializeGame(mainCharacter, currentDay, saveFileName))
+    {
+        bool semesterPassed = false;
+        
+        // main game loop
+        for (int day = currentDay; day <= SEMESTER_LENGTH; day++)
+        {
+            saveGameState(saveFileName, day, mainCharacter); // autosave game state
+            
+            int examIndex = -1;
+            for (int i = 0; i < NUMBER_OF_EXAMS; i++)
+            {
+                if (EXAM_DAYS[i] == day) examIndex = i;
+            }
+
+            if (examIndex != -1)
+            {
+                printHUD(day, mainCharacter);
+                std::cout << "[1] Яви се на изпит \n";
+                
+                getValidInput(1, 1);
+                attemptExam(mainCharacter, examIndex);
+                
+                continue;
+            }
+
+            if (checkAndHandleFaint(mainCharacter, day)) continue;
+            
+            if (triggerDailyEvent(mainCharacter)) continue;
+
+            // returns false if player chose to leave game and true if he chose anything else
+            if (!handleDailyActions(mainCharacter, day)) return 0;
+            
+            if (checkGameOver(mainCharacter)) return 0;
+            
+            // character survived, we apply decay to knowledge to prevent sleep spamming
+            applyNightlyDecay(mainCharacter);
+
+            if (day == SEMESTER_LENGTH) semesterPassed = true;
+        }
+
+        if (semesterPassed)
+        {
+            system("cls");
+            if (mainCharacter.passed_exams == NUMBER_OF_EXAMS)
+            {
+                std::cout << "╭────────────────────────────────────────╮ \n"
+                          << "│              ПОЗДРАВЛЕНИЯ!             │ \n"
+                          << "│       Печелиш, взе всички изпити       │ \n"
+                          << "╰────────────────────────────────────────╯ \n" << std::endl;
+            }
+            else
+            {
+                std::cout << "╭────────────────────────────────────────╮ \n"
+                          << "│                ЗАГУБА!                 │ \n"
+                          << "│   Невзети изпити по време на сесията   │ \n"
+                          << "╰────────────────────────────────────────╯ \n" << std::endl;
+            }
+        
+            waitForKey();
+        }
+        
+        return 0;
+    }
 }
