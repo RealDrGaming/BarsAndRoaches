@@ -341,16 +341,16 @@ void printHUD(int day, const student& s)
         << "     Следващият изпит е на ден " << nextExamDay << "\n"
         << " ───────────────────────────────────── \n"
         << "     » Пари: " << s.money << "€\n"
-        << "     » Енергия: ";
+        << "     » ⚡ Енергия: ";
     printProgressBar(s.energy);
     std::cout << " (" << s.energy << ")\n"
-        << "     » Психика: ";
+        << "     » ☻ Психика: ";
     printProgressBar(s.psyche);
     std::cout << " (" << s.psyche << ")\n"
-        << "     » Здраве: ";
+        << "     » ♥ Здраве: ";
     printProgressBar(s.physical);
     std::cout << " (" << s.physical << ")\n"
-        << "     » Знание:  ";
+        << "     » 📖 Знание:  ";
     printProgressBar(s.knowledge);
     std::cout << " (" << s.knowledge << ")\n"
         << "     » Взети изпити:  " << s.passed_exams << "/" << NUMBER_OF_EXAMS << "\n";
