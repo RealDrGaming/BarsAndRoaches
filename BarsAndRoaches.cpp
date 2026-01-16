@@ -44,7 +44,7 @@ struct action
 // ---
 
 // -- Constants and exam days array
-const int INPUT_LINE_MAX_SIZE = 100; // make dynamic
+const int INPUT_LINE_MAX_SIZE = 100;
 const char BASE_FILE_NAME[] = "SaveSlots.txt";
 const int SEMESTER_LENGTH = 45;
 const int NUMBER_OF_EXAMS = 5;
@@ -147,21 +147,21 @@ bool stringsMatch(const char* a, const char* b)
 int stringToInt(const char* str)
 {
     int result = 0;
-    int i = 0;
+    int index = 0;
     
-    while (str[i] == ' ') i++; // Skip leading whitespaces
+    while (str[index] == ' ') index++; // Skip leading whitespaces
 
     int sign = 1;
-    if (str[i] == '-' || str[i] == '+')
+    if (str[index] == '-' || str[index] == '+')
     {
-        if (str[i] == '-') sign = -1;
-        i++;
+        if (str[index] == '-') sign = -1;
+        index++;
     }
 
-    while (str[i] >= '0' && str[i] <= '9')
+    while (str[index] >= '0' && str[index] <= '9')
     {
-        result = result * 10 + (str[i] - '0');
-        i++;
+        result = result * 10 + (str[index] - '0');
+        index++;
     }
 
     return result * sign; // *1 if sign was + and *(-1) if sign -
@@ -263,26 +263,26 @@ void printAvailableSaves()
     list.close();
 }
 
-void saveGameState(const char* fileName, int day, const student& s)
+void saveGameState(const char* fileName, int day, const student& student)
 {
     std::ofstream file(fileName, std::ios::app);
 
     if (file.is_open())
     {
         file << day << " "
-            << s.money << " "
-            << s.energy << " "
-            << s.psyche << " "
-            << s.physical << " "
-            << s.knowledge << " "
-            << s.passed_exams << " "
-            << s.difficulty << std::endl;
+            << student.money << " "
+            << student.energy << " "
+            << student.psyche << " "
+            << student.physical << " "
+            << student.knowledge << " "
+            << student.passed_exams << " "
+            << student.difficulty << std::endl;
 
         file.close();
     }
 }
 
-bool loadGame(const char* fileName, student& s, int& dayOut)
+bool loadGame(const char* fileName, student& student, int& dayOut)
 {
     std::ifstream file(fileName);
     if (!file.is_open()) return false;
@@ -294,13 +294,13 @@ bool loadGame(const char* fileName, student& s, int& dayOut)
     while (file >> day >> money >> energy >> psyche >> physical >> knowledge >> exams >> diff)
     {
         dayOut = day;
-        s.money = money;
-        s.energy = energy;
-        s.psyche = psyche;
-        s.physical = physical;
-        s.knowledge = knowledge;
-        s.passed_exams = exams;
-        s.difficulty = diff;
+        student.money = money;
+        student.energy = energy;
+        student.psyche = psyche;
+        student.physical = physical;
+        student.knowledge = knowledge;
+        student.passed_exams = exams;
+        student.difficulty = diff;
         success = true;
     }
 
@@ -330,7 +330,7 @@ void printProgressBar(int current)
     for (int i = filled; i < totalBlocks; i++) std::cout << "░";
 }
 
-void printHUD(int day, const student& s)
+void printHUD(int day, const student& student)
 {
     int nextExamDay = getNextExamDay(day, EXAM_DAYS, NUMBER_OF_EXAMS);
 
@@ -340,20 +340,20 @@ void printHUD(int day, const student& s)
         << "     Ден " << day << " от " << SEMESTER_LENGTH << "\n"
         << "     Следващият изпит е на ден " << nextExamDay << "\n"
         << " ───────────────────────────────────── \n"
-        << "     » Пари: " << s.money << "€\n"
+        << "     » Пари: " << student.money << "€\n"
         << "     » ⚡ Енергия: ";
-    printProgressBar(s.energy);
-    std::cout << " (" << s.energy << ")\n"
+    printProgressBar(student.energy);
+    std::cout << " (" << student.energy << ")\n"
         << "     » ☻ Психика: ";
-    printProgressBar(s.psyche);
-    std::cout << " (" << s.psyche << ")\n"
+    printProgressBar(student.psyche);
+    std::cout << " (" << student.psyche << ")\n"
         << "     » ♥ Здраве: ";
-    printProgressBar(s.physical);
-    std::cout << " (" << s.physical << ")\n"
+    printProgressBar(student.physical);
+    std::cout << " (" << student.physical << ")\n"
         << "     » 📖 Знание:  ";
-    printProgressBar(s.knowledge);
-    std::cout << " (" << s.knowledge << ")\n"
-        << "     » Взети изпити:  " << s.passed_exams << "/" << NUMBER_OF_EXAMS << "\n";
+    printProgressBar(student.knowledge);
+    std::cout << " (" << student.knowledge << ")\n"
+        << "     » Взети изпити:  " << student.passed_exams << "/" << NUMBER_OF_EXAMS << "\n";
     std::cout << "╰─────────────────────────────────────╯" << std::endl;
 }
 // ---
@@ -366,23 +366,23 @@ int calculateNewStat(int current, int delta, int divisor, int maxVal)
     return my_clamp(current + change, 0, maxVal);
 }
 
-void applyAction(student& s, const action& act, bool checkEfficiency = true)
+void applyAction(student& studentToChange, const action& act, bool checkEfficiency = true)
 {
-    student oldStud = s;
+    student oldStud = studentToChange;
 
     bool isSuccess = true;
 
     if (checkEfficiency)
     {
-        int chanceToSucceed = 0;
+        int chanceToFail = 0;
 
-        if (s.energy > 80) chanceToSucceed = 100;
-        else if (s.energy > 40) chanceToSucceed = 75;
-        else chanceToSucceed = 50;
+        if (studentToChange.energy > 80) chanceToFail = 0;
+        else if (studentToChange.energy > 40) chanceToFail = 25;
+        else chanceToFail = 50;
 
         int roll = randomWithMax(100);
 
-        if (roll >= chanceToSucceed)
+        if (roll >= 100 - chanceToFail)
         {
             isSuccess = false;
             std::cout << "Уморен си! Действието не беше напълно ефективно!\n";
@@ -393,31 +393,35 @@ void applyAction(student& s, const action& act, bool checkEfficiency = true)
 
     double moneyChange = act.cost;
     if (!isSuccess && moneyChange > 0) moneyChange /= 2;
-    s.money += moneyChange;
+    studentToChange.money += moneyChange;
 
-    s.energy = calculateNewStat(s.energy, act.deltaEnergy, divisor, MAX_PLAYER_ENERGY);
-    s.psyche = calculateNewStat(s.psyche, act.deltaPsyche, divisor, MAX_PLAYER_PSYCHE);
-    s.physical = calculateNewStat(s.physical, act.deltaPhysical, divisor, MAX_PLAYER_PHYSICAL);
-    s.knowledge = calculateNewStat(s.knowledge, act.deltaKnowledge, divisor, MAX_PLAYER_KNOWLEDGE);
+    studentToChange.energy = 
+        calculateNewStat(studentToChange.energy, act.deltaEnergy, divisor, MAX_PLAYER_ENERGY);
+    studentToChange.psyche = 
+        calculateNewStat(studentToChange.psyche, act.deltaPsyche, divisor, MAX_PLAYER_PSYCHE);
+    studentToChange.physical = 
+        calculateNewStat(studentToChange.physical, act.deltaPhysical, divisor, MAX_PLAYER_PHYSICAL);
+    studentToChange.knowledge = 
+        calculateNewStat(studentToChange.knowledge, act.deltaKnowledge, divisor, MAX_PLAYER_KNOWLEDGE);
 
     std::cout << "\n ──────────────────────────\n";
 
-    if (s.money != oldStud.money)
+    if (studentToChange.money != oldStud.money)
     {
-        double diff = s.money - oldStud.money;
+        double diff = studentToChange.money - oldStud.money;
         std::cout << "  " << (diff > 0 ? "+" : "") << diff << "€\n";
     }
-    printStatDiff("Енергия", oldStud.energy, s.energy);
-    printStatDiff("Психика", oldStud.psyche, s.psyche);
-    printStatDiff("Здраве", oldStud.physical, s.physical);
-    printStatDiff("Знание", oldStud.knowledge, s.knowledge);
+    printStatDiff("Енергия", oldStud.energy, studentToChange.energy);
+    printStatDiff("Психика", oldStud.psyche, studentToChange.psyche);
+    printStatDiff("Здраве", oldStud.physical, studentToChange.physical);
+    printStatDiff("Знание", oldStud.knowledge, studentToChange.knowledge);
 
     std::cout << " ──────────────────────────\n";
 
     waitForKey();
 }
 
-bool isActionAllowed(const student& s, const char* actionName)
+bool isActionAllowed(const student& student, const char* actionName)
 {
     const char* target = "Сън";
     bool isSleep = true;
@@ -431,9 +435,9 @@ bool isActionAllowed(const student& s, const char* actionName)
         }
     }
 
-    if (isSleep && s.energy > 90)
+    if (isSleep && student.energy > 90)
     {
-        std::cout << "\n ⚠ Не можеш да заспиш, имаш твърде много енергия \n"
+        std::cout << "\n Не можеш да заспиш, имаш твърде много енергия \n"
             << "   Направи нещо друго, за да се умориш.\n";
         waitForKey();
         return false;
@@ -445,7 +449,7 @@ bool isActionAllowed(const student& s, const char* actionName)
 
 
 // --- Chance based and mandatory events
-void triggerSideEffect(student& s, const char* category)
+void triggerSideEffect(student& student, const char* category)
 {
     if (stringsMatch(category, "Хранене"))
     {
@@ -453,7 +457,7 @@ void triggerSideEffect(student& s, const char* category)
         if (randomWithMax(12) == 0)
         {
             std::cout << "\n О, не! Храната ти беше развалена... (-10 Енергия)\n";
-            s.energy = my_clamp(s.energy - 10, 0, MAX_PLAYER_ENERGY);
+            student.energy = my_clamp(student.energy - 10, 0, MAX_PLAYER_ENERGY);
         }
     }
     else if (stringsMatch(category, "Учене"))
@@ -462,7 +466,7 @@ void triggerSideEffect(student& s, const char* category)
         if (randomWithMax(20) == 0)
         {
             std::cout << "\n Еврика! Разбра материала перфектно! (+10 Знания)\n";
-            s.knowledge = my_clamp(s.knowledge + 10, 0, MAX_PLAYER_KNOWLEDGE);
+            student.knowledge = my_clamp(student.knowledge + 10, 0, MAX_PLAYER_KNOWLEDGE);
         }
     }
     else if (stringsMatch(category, "Излизане"))
@@ -471,23 +475,23 @@ void triggerSideEffect(student& s, const char* category)
         if (randomWithMax(30) == 0)
         {
             std::cout << "\n Намери 20€ на земята пред дискотеката! (+20 Пари)\n";
-            s.money += 20;
+            student.money += 20;
         }
     }
 }
 
-void attemptExam(student& s, int examIndex)
+void attemptExam(student& student, int examIndex)
 {
     int luckCoeff = randomWithMax(100);
     int penalty = examIndex * 7;
 
     int difficultyMod = 0;
-    if (s.difficulty == 1) difficultyMod = 10;
-    else if (s.difficulty == 3) difficultyMod = -10;
+    if (student.difficulty == 1) difficultyMod = 10;
+    else if (student.difficulty == 3) difficultyMod = -10;
 
-    double successChance = (s.knowledge * 0.75)
-        + (s.psyche * 0.1)
-        + (s.energy * 0.1)
+    double successChance = (student.knowledge * 0.75)
+        + (student.psyche * 0.1)
+        + (student.energy * 0.1)
         + (luckCoeff * 0.2)
         - penalty
         + difficultyMod;
@@ -496,57 +500,53 @@ void attemptExam(student& s, int examIndex)
     if (successChance > 50)
     {
         std::cout << "Изпита е взет!\n";
-        s.passed_exams++;
+        student.passed_exams++;
         action reward = {"Pass", 0, -20, 20, 0, 0};
-        applyAction(s, reward, false);
+        applyAction(student, reward, false);
     }
     else
     {
         std::cout << "Скъсан си!\n";
         action fail = {"Fail", 0, -20, -30, 0, 0};
-        applyAction(s, fail, false);
+        applyAction(student, fail, false);
     }
 
     waitForKey();
 }
 
-bool triggerDailyEvent(student& s)
+void triggerRandomEvent(student& student, bool& shouldSkipDay)
 {
-    if (randomWithMax(30) == 0)
+    int eventIndex = randomWithMax(5);
+
+    std::cout << "╭──────────────────────────────────────────╮\n"
+        << "│            СЛУЧАЙНО СЪБИТИЕ!             │\n"
+        << " ────────────────────────────────────────── \n"
+        << "      " << DAILY_EVENTS[eventIndex].name << "\n"
+        << "╰──────────────────────────────────────────╯" << std::endl;
+
+    if (eventIndex == 3)
     {
-        int eventIndex = randomWithMax(4);
-
-        std::cout << "╭──────────────────────────────────────────╮\n"
-            << "│            СЛУЧАЙНО СЪБИТИЕ!             │\n"
-            << " ────────────────────────────────────────── \n"
-            << "      " << DAILY_EVENTS[eventIndex].name << "\n"
-            << "╰──────────────────────────────────────────╯" << std::endl;
-
-        if (eventIndex == 3)
-        {
-            std::cout << " (Пропускаш действието за деня...)\n";
-            waitForKey();
-
-            return true;
-        }
-
-        applyAction(s, DAILY_EVENTS[eventIndex], false);
+        std::cout << " (Пропускаш действието за деня...)\n";
+        waitForKey();
+        
+        shouldSkipDay = true;
     }
-    return false;
+
+    applyAction(student, DAILY_EVENTS[eventIndex], false);
 }
 // ---
 
 
 // --- Open-up sub menu for daily actions
-bool runSubMenu(student& s, const char* title, const action actions[], int count)
+bool runSubMenu(student& student, const char* title, const action actions[], int count)
 {
     std::cout << "╭───────────────────────────────────────────────────╮\n"
         << "            " << title << "\n"
         << " ───────────────────────────────────────────────────\n";
 
-    for (int i = 0; i < count; i++)
+    for (int i = 1; i <= count; i++)
     {
-        std::cout << " [" << (i + 1) << "] " << actions[i].name << "\n";
+        std::cout << " [" << (i) << "] " << actions[i - 1].name << "\n";
     }
 
     std::cout << " [" << (count + 1) << "] Назад \n";
@@ -558,7 +558,7 @@ bool runSubMenu(student& s, const char* title, const action actions[], int count
 
     const action& selectedAction = actions[choice - 1];
 
-    if (!isActionAllowed(s, selectedAction.name))
+    if (!isActionAllowed(student, selectedAction.name))
     {
         return false;
     }
@@ -569,8 +569,8 @@ bool runSubMenu(student& s, const char* title, const action actions[], int count
         riskOfFailure = false;
     }
 
-    applyAction(s, selectedAction, riskOfFailure);
-    triggerSideEffect(s, title);
+    applyAction(student, selectedAction, riskOfFailure);
+    triggerSideEffect(student, title);
 
     return true;
 }
@@ -578,11 +578,12 @@ bool runSubMenu(student& s, const char* title, const action actions[], int count
 
 
 // --- Game loop functions
-bool initializeGame(student& s, int& day, char* saveFileName)
+bool initializeGame(student& student, int& day, char* saveFileName)
 {
     while (true)
     {
         system("cls");
+        
         std::cout << "╭──────────────────────────╮ \n"
             << "│     Bars and Roaches     │ \n"
             << "│       [1] Нов файл       │ \n"
@@ -594,7 +595,7 @@ bool initializeGame(student& s, int& day, char* saveFileName)
 
         if (choice == 1) // new game
         {
-            while (true) 
+            while (true)
             {
                 std::cout << "Как искаш да кръстиш новия файл? {Без празни места!}" << '\n';
                 std::cout << " > ";
@@ -638,7 +639,7 @@ bool initializeGame(student& s, int& day, char* saveFileName)
             // informatika with the highest starting stats, cuz easiest to get in, so the least burnout
             int baseValue = diff * 10 + BASE_STAT_VALUE;
 
-            s =
+            student =
             {
                 BASE_STAT_VALUE, baseValue, baseValue,
                 baseValue, baseValue, 0, diff
@@ -656,7 +657,7 @@ bool initializeGame(student& s, int& day, char* saveFileName)
             std::cout << "Въведи името на файла точно: ";
             std::cin.getline(saveFileName, INPUT_LINE_MAX_SIZE);
 
-            if (loadGame(saveFileName, s, day))
+            if (loadGame(saveFileName, student, day))
             {
                 std::cout << "Успешно заредено! Продължаваме от ден " << day << ".\n";
                 waitForKey();
@@ -675,29 +676,25 @@ bool initializeGame(student& s, int& day, char* saveFileName)
     }
 }
 
-bool checkAndHandleFaint(student& s, int day)
+void handleFaint(student& student, int day)
 {
-    if (s.energy > 0) return false;
-
-    printHUD(day, s);
+    printHUD(day, student);
 
     std::cout << "\n--- Претовари се! ---\n";
     std::cout << "Припадна от умора, пропускаш деня и енергията ти се възстановява частично";
     waitForKey();
 
-    int recoveredEnergy = 40 - s.difficulty + randomWithMax(20);
+    int recoveredEnergy = 40 - student.difficulty + randomWithMax(20);
     action faint = {"Faint", 0, recoveredEnergy, -10, 0, 0};
-    applyAction(s, faint, false);
-
-    return true; // True means character fainted so we skip the day
+    applyAction(student, faint, false);
 }
 
-bool handleDailyActions(student& s, int day)
+bool handleDailyAction(student& student, int day)
 {
     bool hasActed = false;
     while (!hasActed)
     {
-        printHUD(day, s);
+        printHUD(day, student);
 
         std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
             << "[1] Учиш \n"
@@ -709,20 +706,20 @@ bool handleDailyActions(student& s, int day)
 
         int mainChoice = getValidInput(1, 6);
 
-        if (mainChoice == 1) hasActed = runSubMenu(s, "Учене", STUDY_ACTIONS, 3);
-        else if (mainChoice == 2) hasActed = runSubMenu(s, "Хранене", FOOD_ACTIONS, 3);
-        else if (mainChoice == 3) hasActed = runSubMenu(s, "Излизане", FUN_ACTIONS, 3);
-        else if (mainChoice == 4) hasActed = runSubMenu(s, "Почивка", REST_ACTIONS, 3);
-        else if (mainChoice == 5) hasActed = runSubMenu(s, "Работа", WORK_ACTIONS, 3);
+        if (mainChoice == 1) hasActed = runSubMenu(student, "Учене", STUDY_ACTIONS, 3);
+        else if (mainChoice == 2) hasActed = runSubMenu(student, "Хранене", FOOD_ACTIONS, 3);
+        else if (mainChoice == 3) hasActed = runSubMenu(student, "Излизане", FUN_ACTIONS, 3);
+        else if (mainChoice == 4) hasActed = runSubMenu(student, "Почивка", REST_ACTIONS, 3);
+        else if (mainChoice == 5) hasActed = runSubMenu(student, "Работа", WORK_ACTIONS, 3);
         else if (mainChoice == 6) return false;
     }
 
     return true;
 }
 
-bool checkGameOver(const student& s)
+bool checkGameOver(const student& student)
 {
-    if (s.money <= 0)
+    if (student.money <= 0)
     {
         std::cout << "╭────────────────────────────────────────╮ \n"
             << "│                Загуба!                 │ \n"
@@ -731,7 +728,7 @@ bool checkGameOver(const student& s)
         waitForKey();
         return true;
     }
-    if (s.psyche <= 0)
+    if (student.psyche <= 0)
     {
         std::cout << "╭────────────────────────────────────────╮ \n"
             << "│                Загуба!                 │ \n"
@@ -743,28 +740,28 @@ bool checkGameOver(const student& s)
     return false;
 }
 
-void applyNightlyDecay(student& s)
+void applyNightlyDecay(student& student)
 {
-    int amountToLose = s.knowledge / 15;
+    int amountToLose = student.knowledge / 15;
 
-    if (s.psyche > 80)
+    if (student.psyche > 80)
     {
         amountToLose /= 2;
     }
-    else if (s.psyche < 30)
+    else if (student.psyche < 30)
     {
         amountToLose += 5;
     }
 
-    if (s.knowledge > 0 && amountToLose < 1) amountToLose = 1;
+    if (student.knowledge > 0 && amountToLose < 1) amountToLose = 1;
 
-    int previousKnowledge = s.knowledge;
-    s.knowledge = my_clamp(s.knowledge - amountToLose, 0, MAX_PLAYER_KNOWLEDGE);
+    int previousKnowledge = student.knowledge;
+    student.knowledge = my_clamp(student.knowledge - amountToLose, 0, MAX_PLAYER_KNOWLEDGE);
 
-    if (previousKnowledge > s.knowledge && amountToLose > 1)
+    if (previousKnowledge > student.knowledge && amountToLose > 1)
     {
         std::cout << "През нощта част от знанията ти избледняха...\n"
-            << "   (-" << (previousKnowledge - s.knowledge) << " Знания)\n";
+            << "   (-" << (previousKnowledge - student.knowledge) << " Знания)\n";
         waitForKey();
     }
 }
@@ -787,7 +784,8 @@ int main(int argc, char* argv[])
     char saveFileName[INPUT_LINE_MAX_SIZE];
 
     // initializing game, start menu, difficulty choosing, save file choosing
-    if (!initializeGame(mainCharacter, currentDay, saveFileName)) return 0;
+    if (!initializeGame(mainCharacter, currentDay, saveFileName)) 
+        return 0;
 
     // end of semester flag
     bool semesterPassed = false;
@@ -814,40 +812,45 @@ int main(int argc, char* argv[])
             continue;
         }
 
-        if (checkAndHandleFaint(mainCharacter, day)) continue;
+        if (mainCharacter.energy <= 0)
+        {
+            handleFaint(mainCharacter, day);
+            continue;
+        }
 
-        if (triggerDailyEvent(mainCharacter)) continue;
-
+        if (randomWithMax(30) == 0)
+        {
+            bool shouldDaySkip = false;
+            
+            triggerRandomEvent(mainCharacter, shouldDaySkip);
+            
+            if (shouldDaySkip) continue; // skip day if student fainted
+        }
+        
         // returns false if player chose to leave game and true if he chose anything else
-        if (!handleDailyActions(mainCharacter, day)) return 0;
+        if (!handleDailyAction(mainCharacter, day)) return 0;
 
         if (checkGameOver(mainCharacter)) return 0;
 
         // character survived, we apply decay to knowledge to prevent sleep spamming
         applyNightlyDecay(mainCharacter);
-
-        if (day == SEMESTER_LENGTH) semesterPassed = true;
     }
-
-    if (semesterPassed)
+    
+    system("cls");
+        
+    if (mainCharacter.passed_exams == NUMBER_OF_EXAMS)
     {
-        system("cls");
-        if (mainCharacter.passed_exams == NUMBER_OF_EXAMS)
-        {
-            std::cout << "╭────────────────────────────────────────╮ \n"
-                << "│              ПОЗДРАВЛЕНИЯ!             │ \n"
-                << "│       Печелиш, взе всички изпити       │ \n"
-                << "╰────────────────────────────────────────╯ \n" << std::endl;
-        }
-        else
-        {
-            std::cout << "╭────────────────────────────────────────╮ \n"
-                << "│                ЗАГУБА!                 │ \n"
-                << "│   Невзети изпити по време на сесията   │ \n"
-                << "╰────────────────────────────────────────╯ \n" << std::endl;
-        }
-
-        waitForKey();
+        std::cout << "╭────────────────────────────────────────╮ \n"
+            << "│              ПОЗДРАВЛЕНИЯ!             │ \n"
+            << "│       Печелиш, взе всички изпити       │ \n"
+            << "╰────────────────────────────────────────╯ \n" << std::endl;
+    }
+    else
+    {
+        std::cout << "╭────────────────────────────────────────╮ \n"
+            << "│                ЗАГУБА!                 │ \n"
+            << "│   Невзети изпити по време на сесията   │ \n"
+            << "╰────────────────────────────────────────╯ \n" << std::endl;
     }
     
     return 0;
