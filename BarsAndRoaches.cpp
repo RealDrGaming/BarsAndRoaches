@@ -759,7 +759,7 @@ bool handleDailyAction(student& student, int day, const int* exam_days)
     {
         printHUD(student, day, exam_days);
 
-        std::cout << "Какво искаш да направиш днес? {Ден: " << day << "}" << '\n'
+        std::cout << "Какво искаш да направиш днес?\n"
             << "[1] Учиш \n"
             << "[2] Храниш се \n"
             << "[3] Излизаш \n"
