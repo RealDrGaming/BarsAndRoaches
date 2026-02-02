@@ -21,7 +21,7 @@
 
 
 // --- Structs for the student and action
-struct student
+struct Student
 {
     double money;
     int energy;
@@ -32,7 +32,7 @@ struct student
     int difficulty;
 };
 
-struct action
+struct Action
 {
     const char* name;
     double cost;
@@ -82,7 +82,7 @@ const int RECOVERED_ENERGY_DIFFICULTY_MULTIPLIER = 5;
 
 
 // --- Action constants
-const action DAILY_EVENTS[] = {
+const Action DAILY_EVENTS[] = {
     {"Мама и тате ти пращат пари", 20, 0, 0, 0, 0},
     {"Приятел те черпи кафе", 0, 0, 10, 0, 0},
     {"Разболял си се", 0, -20, 0, 0, 0},
@@ -92,31 +92,31 @@ const action DAILY_EVENTS[] = {
 };
 
 
-const action STUDY_ACTIONS[] = {
+const Action STUDY_ACTIONS[] = {
     {"Лекции (⚡-- / ☻ -- / ♥- / 📖++)", 0, -20, -20, -10, 20},
     {"Вкъщи сам (⚡- / ☻ -- / ♥- / 📖+++)", 0, -10, -20, -10, 30},
     {"Навън с приятели (⚡- / ☻ + / ♥- / 📖+)", 0, -10, 10, -10, 10}
 };
 
-const action FOOD_ACTIONS[] = {
+const Action FOOD_ACTIONS[] = {
     {"Стол (-12€ / ⚡++ / ☻ -)", -12, 20, -10, 0, 0},
     {"Дюнер (-16€ / ⚡++ / ☻ + / ♥-)", -16, 20, 10, -10, 0},
     {"Вкъщи (-25€ / ⚡+++)", -25, 30, 0, 0, 0}
 };
 
-const action FUN_ACTIONS[] = {
+const Action FUN_ACTIONS[] = {
     {"Бар (-20€ / ⚡- / ☻ ++ / ♥-)", -15, -10, 20, -10, 0},
     {"Концерт (-50€ / ⚡-- / ☻ +++ / ♥--)", -50, -20, 30, -20, 0},
     {"Разходка (0€ / ⚡- / ☻ + / ♥+)", 0, -10, 10, 10, 0}
 };
 
-const action REST_ACTIONS[] = {
+const Action REST_ACTIONS[] = {
     {"Сън (⚡++ / ☻ +)", 0, 20, 10, 0, 0},
     {"Играй игри (⚡- / ☻ + / ♥-)", 0, -10, 10, -10, 0},
     {"Фитнес (⚡-- / ☻ ++ / ♥++)", 0, -20, 20, 20, 0}
 };
 
-const action WORK_ACTIONS[] = {
+const Action WORK_ACTIONS[] = {
     {"Почасово (+15€ / ⚡- / ☻ -)", 15, -10, -10, 0, 0},
     {"Касиер (+30€ / ⚡-- / ☻ --)", 30, -20, -20, 0, 0},
     {"Таксиджия (+50€ / ⚡--- / ☻ ---)", 50, -30, -30, 0, 0}
@@ -141,7 +141,7 @@ bool containsSpace(const char* str)
     return false;
 }
 
-int my_clamp(int value, int minVal, int maxVal)
+int myClamp(int value, int minVal, int maxVal)
 {
     if (value < minVal) return minVal;
     if (value > maxVal) return maxVal;
@@ -154,7 +154,7 @@ void waitForKey()
     std::cin.get();
 }
 
-bool stringsMatch(const char* a, const char* b)
+bool areStringsEqual(const char* a, const char* b)
 {
     int i = 0;
 
@@ -167,7 +167,7 @@ bool stringsMatch(const char* a, const char* b)
     return (a[i] == '\0' && b[i] == '\0');
 }
 
-int stringToInt(const char* str)
+int parseStringToInt(const char* str)
 {
     int result = 0;
     int index = 0;
@@ -199,7 +199,7 @@ int getValidInput(int min, int max)
         std::cout << " > ";
 
         std::cin.getline(buffer, INPUT_LINE_MAX_SIZE);
-        int choice = stringToInt(buffer);
+        int choice = parseStringToInt(buffer);
         
         if (choice >= min && choice <= max) 
             return choice;
@@ -232,7 +232,7 @@ void registerSaveFile(const char* newFileName)
     {
         while (check >> tempName)
         {
-            if (stringsMatch(tempName, newFileName))
+            if (areStringsEqual(tempName, newFileName))
             {
                 check.close();
                 return; // Name exists already, we don't double up
@@ -257,7 +257,7 @@ bool saveFileExists(const char* fileName)
     char tempName[INPUT_LINE_MAX_SIZE];
     while (list >> tempName)
     {
-        if (stringsMatch(tempName, fileName))
+        if (areStringsEqual(tempName, fileName))
         {
             list.close();
             return true; // file exists
@@ -286,7 +286,7 @@ void printAvailableSaves()
     list.close();
 }
 
-void saveGameState(const char* fileName, int day, const student& student)
+void saveGameState(const char* fileName, int day, const Student& student)
 {
     std::ofstream file(fileName, std::ios::app);
 
@@ -305,7 +305,7 @@ void saveGameState(const char* fileName, int day, const student& student)
     }
 }
 
-bool loadGame(const char* fileName, student& student, int& dayOut)
+bool loadGame(const char* fileName, Student& student, int& dayOut)
 {
     std::ifstream file(fileName);
     if (!file.is_open()) return false;
@@ -334,12 +334,12 @@ bool loadGame(const char* fileName, student& student, int& dayOut)
 
 
 // --- Printing to the console and UI
-void printStatDiff(const char* label, int oldVal, int newVal, const char* suffix = "")
+void printStatDiff(const char* label, int oldVal, int newVal)
 {
     if (oldVal != newVal)
     {
         int diff = newVal - oldVal;
-        std::cout << "  " << (diff > 0 ? "+" : "") << diff << " " << label << suffix << std::endl;
+        std::cout << "  " << (diff > 0 ? "+" : "") << diff << " " << label << std::endl;
     }
 }
 
@@ -353,7 +353,7 @@ void printProgressBar(int current)
     for (int i = filled; i < totalBlocks; i++) std::cout << "░";
 }
 
-void printHUD(const student& student, int day, const int* exam_days)
+void printHUD(const Student& student, int day, const int* exam_days)
 {
     int nextExamDay = getNextExamDay(day, exam_days, NUMBER_OF_EXAMS);
 
@@ -386,12 +386,12 @@ void printHUD(const student& student, int day, const int* exam_days)
 int calculateNewStat(int current, int delta, int divisor, int maxVal)
 {
     int change = (delta > 0) ? (delta / divisor) : delta;
-    return my_clamp(current + change, 0, maxVal);
+    return myClamp(current + change, 0, maxVal);
 }
 
-void applyAction(student& studentToChange, const action& act, bool checkEfficiency = true)
+void applyAction(Student& studentToChange, const Action& act, bool checkEfficiency = true)
 {
-    student oldStud = studentToChange;
+    Student oldStud = studentToChange;
 
     bool isSuccess = true;
 
@@ -444,7 +444,7 @@ void applyAction(student& studentToChange, const action& act, bool checkEfficien
     waitForKey();
 }
 
-bool isActionAllowed(const student& student, const char* actionName)
+bool isActionAllowed(const Student& student, const char* actionName)
 {
     const char* target = "Сън";
     bool isSleep = true;
@@ -472,27 +472,27 @@ bool isActionAllowed(const student& student, const char* actionName)
 
 
 // --- Chance based and mandatory events
-void triggerSideEffect(student& student, const char* category)
+void triggerSideEffect(Student& student, const char* category)
 {
-    if (stringsMatch(category, "Хранене"))
+    if (areStringsEqual(category, "Хранене"))
     {
         // Spoiled food event
         if (randomWithMax(SPOILED_FOOD_EVENT_CHANCE) == 0)
         {
             std::cout << "\n О, не! Храната ти беше развалена... (-10 Енергия)" << std::endl;
-            student.energy = my_clamp(student.energy - 10, 0, MAX_PLAYER_ENERGY);
+            student.energy = myClamp(student.energy - 10, 0, MAX_PLAYER_ENERGY);
         }
     }
-    else if (stringsMatch(category, "Учене"))
+    else if (areStringsEqual(category, "Учене"))
     {
         // Eureka event
         if (randomWithMax(EUREKA_EVENT_CHANCE) == 0)
         {
             std::cout << "\n Еврика! Разбра материала перфектно! (+10 Знания)" << std::endl;
-            student.knowledge = my_clamp(student.knowledge + 10, 0, MAX_PLAYER_KNOWLEDGE);
+            student.knowledge = myClamp(student.knowledge + 10, 0, MAX_PLAYER_KNOWLEDGE);
         }
     }
-    else if (stringsMatch(category, "Излизане"))
+    else if (areStringsEqual(category, "Излизане"))
     {
         // Lucky event ig
         if (randomWithMax(FOUND_MONEY_EVENT_CHANCE) == 0)
@@ -503,7 +503,7 @@ void triggerSideEffect(student& student, const char* category)
     }
 }
 
-void attemptExam(student& student, int examIndex)
+void attemptExam(Student& student, int examIndex)
 {
     int luckCoeff = randomWithMax(100);
     int penalty = examIndex * EXAM_PENALTY_MULTIPLIER;
@@ -524,20 +524,21 @@ void attemptExam(student& student, int examIndex)
     {
         std::cout << "Изпитът е взет!" << std::endl;
         student.passed_exams++;
-        action reward = {"Pass", 0, -20, 20, 0, 0};
+        Action reward = {"Pass", 0, -20, 20, 0, 0};
         applyAction(student, reward, false);
     }
     else
     {
         std::cout << "Скъсан си!" << std::endl;
-        action fail = {"Fail", 0, -20, -30, 0, 0};
+        Action fail = {"Fail", 0, -20, -30, 0, 0};
         applyAction(student, fail, false);
     }
 }
 
-void triggerRandomEvent(student& student, bool& shouldSkipDay)
+void triggerRandomEvent(Student& student, bool& shouldSkipDay)
 {
-    int eventIndex = randomWithMax(6);
+    int numberOfRandomEvents = sizeof(DAILY_EVENTS) / sizeof(DAILY_EVENTS[0]);
+    int eventIndex = randomWithMax(numberOfRandomEvents);
 
     std::cout << "╭──────────────────────────────────────────╮\n"
         << "│            СЛУЧАЙНО СЪБИТИЕ!             │\n"
@@ -559,7 +560,7 @@ void triggerRandomEvent(student& student, bool& shouldSkipDay)
 
 
 // --- Open-up sub menu for daily actions
-bool runSubMenu(student& student, const char* title, const action actions[], int count)
+bool runSubMenu(Student& student, const char* title, const Action actions[], int count)
 {
     std::cout << "╭───────────────────────────────────────────╮\n"
         << "            " << title << "\n"
@@ -577,7 +578,7 @@ bool runSubMenu(student& student, const char* title, const action actions[], int
 
     if (choice == count + 1) return false;
 
-    const action& selectedAction = actions[choice - 1];
+    const Action& selectedAction = actions[choice - 1];
 
     if (!isActionAllowed(student, selectedAction.name))
     {
@@ -585,7 +586,7 @@ bool runSubMenu(student& student, const char* title, const action actions[], int
     }
 
     bool riskOfFailure = true;
-    if (stringsMatch(title, "Почивка"))
+    if (areStringsEqual(title, "Почивка"))
     {
         riskOfFailure = false;
     }
@@ -630,7 +631,7 @@ void handleNewFileCreation(char* saveFileName)
     }
 }
 
-void chooseDiffAndInitCharacter(student& student, int& day, bool& shouldGoBack)
+void chooseDiffAndInitCharacter(Student& student, int& day, bool& shouldGoBack)
 {
     std::cout << "╭───────────────────────────────────────────────╮ \n"
                 << "│          Избери своята специалност:           │ \n"
@@ -660,7 +661,7 @@ void chooseDiffAndInitCharacter(student& student, int& day, bool& shouldGoBack)
     day = 1;
 }
 
-bool initializeGame(student& student, int& day, char* saveFileName)
+bool initializeGame(Student& student, int& day, char* saveFileName)
 {
     while (true)
     {
@@ -714,29 +715,31 @@ bool initializeGame(student& student, int& day, char* saveFileName)
     }
 }
 
-void handleExam(student& student, int day, const int* exam_dates, bool& dayShouldSkip)
+bool handleExam(Student& student, int day, const int* examDays)
 {
     int examIndex = -1;
     for (int i = 0; i < NUMBER_OF_EXAMS; i++)
     {
-        if (exam_dates[i] == day) examIndex = i;
+        if (examDays[i] == day) examIndex = i;
     }
 
     if (examIndex != -1)
     {
-        printHUD(student, day, exam_dates);
+        printHUD(student, day, examDays);
         std::cout << "[1] Яви се на изпит" << std::endl;
 
         getValidInput(1, 1);
         attemptExam(student, examIndex);
-
-        dayShouldSkip = true;
+        
+        return true;
     }
+    
+    return false;
 }
 
-void handleFaint(student& student, int day, const int* exam_days, bool& dayShouldSkip)
+void handleFaint(Student& student, int day, const int* examDays)
 {
-    printHUD(student, day, exam_days);
+    printHUD(student, day, examDays);
 
     std::cout << "\n--- Претовари се! ---\n"
         << "Припадна от умора. Пропускаш деня и енергията ти се възстановява частично" << std::endl;
@@ -746,18 +749,16 @@ void handleFaint(student& student, int day, const int* exam_days, bool& dayShoul
             randomWithMax(RECOVERED_ENERGY_RANDOM_MAX) - 
             (student.difficulty * RECOVERED_ENERGY_DIFFICULTY_MULTIPLIER);
     
-    action faint = {"Faint", 0, recoveredEnergy, -10, 0, 0};
+    Action faint = {"Faint", 0, recoveredEnergy, -10, 0, 0};
     applyAction(student, faint, false);
-    
-    dayShouldSkip = true;
 }
 
-bool handleDailyAction(student& student, int day, const int* exam_days)
+bool handleDailyAction(Student& student, int day, const int* examDays)
 {
     bool hasActed = false;
     while (!hasActed)
     {
-        printHUD(student, day, exam_days);
+        printHUD(student, day, examDays);
 
         std::cout << "Какво искаш да направиш днес?\n"
             << "[1] Учиш \n"
@@ -769,18 +770,24 @@ bool handleDailyAction(student& student, int day, const int* exam_days)
 
         int mainChoice = getValidInput(1, 6);
 
-        if (mainChoice == 1) hasActed = runSubMenu(student, "Учене", STUDY_ACTIONS, 3);
-        else if (mainChoice == 2) hasActed = runSubMenu(student, "Хранене", FOOD_ACTIONS, 3);
-        else if (mainChoice == 3) hasActed = runSubMenu(student, "Излизане", FUN_ACTIONS, 3);
-        else if (mainChoice == 4) hasActed = runSubMenu(student, "Почивка", REST_ACTIONS, 3);
-        else if (mainChoice == 5) hasActed = runSubMenu(student, "Работа", WORK_ACTIONS, 3);
+        int numberOfStudyingChoices = sizeof(STUDY_ACTIONS) / sizeof(STUDY_ACTIONS[0]);
+        int numberOfEatingChoices = sizeof(FOOD_ACTIONS) / sizeof(FOOD_ACTIONS[0]);
+        int numberOfFunChoices = sizeof(FUN_ACTIONS) / sizeof(FUN_ACTIONS[0]);
+        int numberOfRestChoices = sizeof(REST_ACTIONS) / sizeof(REST_ACTIONS[0]);
+        int numberOfWorkChoices = sizeof(WORK_ACTIONS) / sizeof(WORK_ACTIONS[0]);
+        
+        if (mainChoice == 1) hasActed = runSubMenu(student, "Учене", STUDY_ACTIONS, numberOfStudyingChoices);
+        else if (mainChoice == 2) hasActed = runSubMenu(student, "Хранене", FOOD_ACTIONS, numberOfEatingChoices);
+        else if (mainChoice == 3) hasActed = runSubMenu(student, "Излизане", FUN_ACTIONS, numberOfFunChoices);
+        else if (mainChoice == 4) hasActed = runSubMenu(student, "Почивка", REST_ACTIONS, numberOfRestChoices);
+        else if (mainChoice == 5) hasActed = runSubMenu(student, "Работа", WORK_ACTIONS, numberOfWorkChoices);
         else if (mainChoice == 6) return false;
     }
 
     return true;
 }
 
-bool checkGameOver(const student& student)
+bool checkGameOver(const Student& student)
 {
     if (student.money <= 0)
     {
@@ -812,7 +819,7 @@ bool checkGameOver(const student& student)
     return false;
 }
 
-void applyNightlyDecay(student& student)
+void applyNightlyDecay(Student& student)
 {
     int amountToLose = student.knowledge / KNOWLEDGE_DECAY_DIVISOR;
 
@@ -828,7 +835,7 @@ void applyNightlyDecay(student& student)
     if (student.knowledge > 0 && amountToLose < 1) amountToLose = 1; // minimum knowledge loss
 
     int previousKnowledge = student.knowledge;
-    student.knowledge = my_clamp(student.knowledge - amountToLose, 0, MAX_PLAYER_KNOWLEDGE);
+    student.knowledge = myClamp(student.knowledge - amountToLose, 0, MAX_PLAYER_KNOWLEDGE);
 
     if (previousKnowledge > student.knowledge && amountToLose > 1)
     {
@@ -849,10 +856,10 @@ int main(int argc, char* argv[])
     std::srand(std::time(0));
 
     // initialize exam dates and make fourth date random
-    int exam_days[] = {8, 17, 26, 0, 45}; // fourth date
-    exam_days[3] = (exam_days[2] + 1) + randomWithMax(exam_days[4] - exam_days[2] - 1);
+    int examDays[] = {8, 17, 26, 0, 45}; // fourth date
+    examDays[3] = (examDays[2] + 1) + randomWithMax(examDays[4] - examDays[2] - 1);
     
-    student mainCharacter;
+    Student mainCharacter;
     int currentDay = 1;
     char saveFileName[INPUT_LINE_MAX_SIZE];
 
@@ -863,27 +870,26 @@ int main(int argc, char* argv[])
     // main game loop
     for (int day = currentDay; day <= SEMESTER_LENGTH; day++)
     {
-        bool shouldSkipDay = false;
-        
         saveGameState(saveFileName, day, mainCharacter); // autosave character stats
-
-        handleExam(mainCharacter, day, exam_days, shouldSkipDay);
-        if (shouldSkipDay) continue;
+        
+        if (handleExam(mainCharacter, day, examDays)) continue;
 
         if (mainCharacter.energy <= 0)
         {
-            handleFaint(mainCharacter, day, exam_days, shouldSkipDay);
-            if (shouldSkipDay) continue;
+            handleFaint(mainCharacter, day, examDays);
+            continue;
         }
 
         if (randomWithMax(RANDOM_EVENT_CHANCE) == 0)
         {
+            bool shouldSkipDay = false;
+            
             triggerRandomEvent(mainCharacter, shouldSkipDay);
             if (shouldSkipDay) continue;
         }
         
         // returns false if player chose to leave game and true if he chose anything else
-        if (!handleDailyAction(mainCharacter, day, exam_days)) return 0;
+        if (!handleDailyAction(mainCharacter, day, examDays)) return 0;
 
         if (checkGameOver(mainCharacter)) return 0;
 
